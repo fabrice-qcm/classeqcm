@@ -194,9 +194,15 @@ const Editor = (() => {
 
   async function importQuizFile(file) {
     try {
-      const obj = IO.validateQuiz(JSON.parse(await IO.readFile(file)));
-      obj.id = obj.id || ('quiz-' + Date.now().toString(36));
-      obj.modifie = new Date().toISOString();
+      const text = await IO.readFileSmart(file);
+      let obj;
+      if (text.replace(/^\uFEFF/, '').trimStart().startsWith('{')) {
+        obj = IO.validateQuiz(JSON.parse(text));       // fichier JSON exporté par l'app
+        obj.id = obj.id || ('quiz-' + Date.now().toString(36));
+        obj.modifie = new Date().toISOString();
+      } else {
+        obj = IO.validateQuiz(IO.csvToQuiz(IO.parseCSV(text)));  // fichier CSV (Excel)
+      }
       await Storage.saveQuiz(obj);
       renderList();
     } catch (e) {

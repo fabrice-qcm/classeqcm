@@ -35,7 +35,8 @@ const Results = (() => {
         id: id, nom: e.nom || '', prenom: e.prenom || '',
         label: (e.prenom || e.nom) ? [e.prenom, e.nom].filter(Boolean).join(' ') : 'Carte ' + id,
         answers: answers, answered: answered, correct: correct,
-        pct: answered ? Math.round(100 * correct / answered) : null
+        // Score calculé sur le TOTAL des questions (une non-réponse compte fausse).
+        pct: Math.round(100 * correct / questions.length)
       };
     });
 
@@ -124,8 +125,8 @@ const Results = (() => {
     data.students.forEach(s => {
       html += '<tr><td class="rc-name"></td>';
       s.answers.forEach(a => { html += cellMark(a); });
-      html += '<td class="rc-score">' + s.correct + '/' + s.answered +
-        (s.pct === null ? '' : '<span class="rc-qpct">' + s.pct + '\u00a0%</span>') + '</td></tr>';
+      html += '<td class="rc-score">' + s.correct + '/' + data.quiz.questions.length +
+        '<span class="rc-qpct">' + s.pct + '\u00a0%</span></td></tr>';
     });
     html += '</tbody></table></div>';
     wrap.innerHTML = html;
@@ -140,7 +141,7 @@ const Results = (() => {
       let v = 0;
       if (sortKey === 'num') v = a.id - b.id;
       if (sortKey === 'nom') v = a.label.localeCompare(b.label, 'fr');
-      if (sortKey === 'score') v = (a.pct === null ? -1 : a.pct) - (b.pct === null ? -1 : b.pct) || (a.correct - b.correct);
+      if (sortKey === 'score') v = (a.pct - b.pct) || (a.correct - b.correct);
       return v * sortDir;
     });
     const arrow = k => sortKey === k ? (sortDir === 1 ? ' \u25b2' : ' \u25bc') : '';
@@ -150,9 +151,12 @@ const Results = (() => {
       '<th class="rc-sort" data-k="score">Bonnes r\u00e9ponses' + arrow('score') + '</th>' +
       '<th>%</th></tr></thead><tbody>';
     sorted.forEach(s => {
+      const nq = data.quiz.questions.length;
+      const manque = nq - s.answered;
       html += '<tr><td>' + s.id + '</td><td class="rc-name"></td>' +
-        '<td>' + s.correct + ' / ' + s.answered + '</td>' +
-        '<td>' + (s.pct === null ? '\u2013' : '<strong>' + s.pct + '\u00a0%</strong>') + '</td></tr>';
+        '<td>' + s.correct + ' / ' + nq +
+        (manque ? ' <span class="rc-qpct">(' + manque + ' sans r\u00e9ponse)</span>' : '') + '</td>' +
+        '<td><strong>' + s.pct + '\u00a0%</strong></td></tr>';
     });
     html += '</tbody></table></div>';
     wrap.innerHTML = html;
@@ -208,7 +212,7 @@ const Results = (() => {
     data.students.forEach(s => {
       lines.push([s.id, s.nom, s.prenom,
         ...s.answers.map(a => a.letter === null ? '' : a.letter + (a.ok ? ' (juste)' : ' (faux)')),
-        s.correct, s.answered, s.pct === null ? '' : s.pct + '%'].join(';'));
+        s.correct, s.answered, s.pct + '%'].join(';'));
     });
     lines.push(['', '', '% justes par question',
       ...data.perQuestion.map(pq => pq.pct === null ? '' : pq.pct + '%'), '', '', ''].join(';'));
@@ -225,8 +229,9 @@ const Results = (() => {
     L.push('');
     L.push('=== PAR \u00c9L\u00c8VE ===');
     data.students.forEach(s => {
-      L.push(s.label + ' (carte ' + s.id + ') : ' + s.correct + '/' + s.answered +
-        (s.pct === null ? '' : ' soit ' + s.pct + ' %'));
+      L.push(s.label + ' (carte ' + s.id + ') : ' + s.correct + '/' + data.quiz.questions.length +
+        ' soit ' + s.pct + ' %' + (s.answered < data.quiz.questions.length ?
+        ' (' + (data.quiz.questions.length - s.answered) + ' sans r\u00e9ponse)' : ''));
     });
     L.push('');
     L.push('=== PAR QUESTION ===');

@@ -61,15 +61,65 @@ const IO = (() => {
     });
   }
 
-  /* Parse un CSV simple (sans guillemets imbriqués) : détecte le séparateur
-     ( ; , ou tabulation ) sur la première ligne non vide. */
+  /* Parse un CSV en gérant les champs entre guillemets ("" = guillemet littéral).
+     Séparateur ( ; , ou tabulation ) détecté sur la première ligne hors guillemets. */
   function parseCSV(text) {
-    const lines = text.replace(/^\uFEFF/, '').split(/\r\n|\r|\n/).filter(l => l.trim() !== '');
-    if (lines.length === 0) return [];
-    const first = lines[0];
+    text = text.replace(/^\uFEFF/, '');
+    const firstLine = (text.split(/\r\n|\r|\n/)[0] || '').replace(/"[^"]*"/g, '');
     const sep = [';', '\t', ','].reduce((best, s) =>
-      first.split(s).length > first.split(best).length ? s : best, ';');
-    return lines.map(l => l.split(sep).map(c => c.trim()));
+      firstLine.split(s).length > firstLine.split(best).length ? s : best, ';');
+    const rows = [];
+    let row = [], cur = '', inQ = false, started = false;
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      if (inQ) {
+        if (ch === '"') {
+          if (text[i + 1] === '"') { cur += '"'; i++; } else inQ = false;
+        } else cur += ch;
+      } else if (ch === '"') {
+        inQ = true; started = true;
+      } else if (ch === sep) {
+        row.push(cur.trim()); cur = ''; started = true;
+      } else if (ch === '\n' || ch === '\r') {
+        if (ch === '\r' && text[i + 1] === '\n') i++;
+        if (started || cur.trim() !== '') { row.push(cur.trim()); rows.push(row); }
+        row = []; cur = ''; started = false;
+      } else { cur += ch; started = true; }
+    }
+    if (started || cur.trim() !== '') { row.push(cur.trim()); rows.push(row); }
+    return rows.filter(r => r.some(c => c !== ''));
+  }
+
+  /* Convertit un CSV en questionnaire.
+     Ligne 1 : titre. Lignes suivantes : question ; bonne réponse (1-4 ou A-D) ;
+     choix A ; choix B ; [choix C] ; [choix D]. */
+  function csvToQuiz(rows) {
+    const err = msg => { throw new Error(msg); };
+    if (rows.length < 2) err('Le fichier doit contenir un titre puis au moins une question.');
+    const titre = (rows[0][0] || '').trim();
+    if (!titre) err('Titre manquant (ligne 1, colonne 1).');
+    const LETTRES = ['A', 'B', 'C', 'D'];
+    const questions = rows.slice(1).map((cells, i) => {
+      const ligne = i + 2;
+      const texte = (cells[0] || '').trim();
+      if (!texte) err('Ligne ' + ligne + ' : question vide.');
+      const choix = cells.slice(2).map(c => c.trim()).filter(c => c !== '');
+      if (choix.length < 2) err('Ligne ' + ligne + ' : au moins 2 choix requis (colonnes 3 et suivantes).');
+      if (choix.length > 4) err('Ligne ' + ligne + ' : 4 choix maximum (' + choix.length + ' trouvés).');
+      const raw = (cells[1] || '').trim().toUpperCase();
+      let idx = -1;
+      if (/^[1-4]$/.test(raw)) idx = parseInt(raw, 10) - 1;
+      else if (/^[A-D]$/.test(raw)) idx = LETTRES.indexOf(raw);
+      else err('Ligne ' + ligne + ' : bonne réponse « ' + raw + ' » invalide (attendu 1-4 ou A-D).');
+      if (idx >= choix.length) err('Ligne ' + ligne + ' : la bonne réponse (' + raw +
+        ') dépasse le nombre de choix (' + choix.length + ').');
+      return { num: i + 1, texte: texte, choix: choix, bonneReponse: LETTRES[idx] };
+    });
+    return {
+      type: 'quiz', version: 1,
+      id: 'quiz-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 6),
+      titre: titre, questions: questions, modifie: new Date().toISOString()
+    };
   }
 
   function slug(text) {
@@ -79,5 +129,5 @@ const IO = (() => {
       .slice(0, 40) || 'sans-titre';
   }
 
-  return { download, readFile, readFileSmart, parseCSV, validateQuiz, slug };
+  return { download, readFile, readFileSmart, parseCSV, csvToQuiz, validateQuiz, slug };
 })();
