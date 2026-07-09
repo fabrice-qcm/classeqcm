@@ -27,6 +27,7 @@
     <button class="tab" data-view="roster" role="tab">Classe</button>
     <button class="tab" data-view="cards" role="tab">Cartes</button>
     <button class="tab" data-view="scan" role="tab">Scan</button>
+    <button class="tab" data-view="projection" role="tab">Projection</button>
     <button class="tab" data-view="results" role="tab">Résultats</button>
   </nav>
 </header>
@@ -72,6 +73,7 @@
     <div class="view-head">
       <h1>Classe</h1>
       <div class="view-actions">
+        <button id="btn-share-roster" class="btn ghost">Partager…</button>
         <button id="btn-import-roster" class="btn ghost">Importer CSV…</button>
         <button id="btn-export-roster" class="btn ghost">Exporter CSV</button>
         <button id="btn-save-roster" class="btn primary">Enregistrer la classe</button>
@@ -144,6 +146,12 @@
         <canvas id="scan-overlay"></canvas>
         <div id="scan-counter" class="scan-counter">0 / 0</div>
       </div>
+      <div class="scan-projector">
+        <input type="text" id="scan-projector-code" placeholder="Code projection"
+          maxlength="5" autocapitalize="characters" autocomplete="off">
+        <button id="btn-scan-projector" class="btn small ghost">Projeter</button>
+        <span id="scan-projector-status" class="status" style="flex:1"></span>
+      </div>
       <div id="scan-zoom-wrap" class="scan-zoom hidden">
         <span>Zoom</span>
         <input type="range" id="scan-zoom">
@@ -173,11 +181,62 @@
       </div>
     </div>
   </section>
+  <section id="view-projection" class="view hidden">
+    <div class="view-head">
+      <h1>Projection</h1>
+      <div class="view-actions">
+        <button id="btn-proj-full" class="btn ghost">Plein écran</button>
+        <button id="btn-proj-start" class="btn primary">Ouvrir la projection</button>
+      </div>
+    </div>
+    <p class="hint">
+      Sur le PC relié au vidéoprojecteur : cliquez « Ouvrir la projection », un code
+      s'affiche. Sur le téléphone, en session de scan, entrez ce code (champ
+      « Projeter »). La question et la liste des élèves (gris = pas encore répondu,
+      bleu = a répondu) se mettent à jour en direct. Internet est nécessaire au moment
+      de la connexion ; ensuite les données passent directement entre les deux appareils.
+    </p>
+    <div id="proj-screen" class="proj-screen">
+      <div id="proj-wait" class="proj-wait">
+        <div class="proj-code-label">Code de session</div>
+        <div id="proj-code" class="proj-code">—</div>
+        <p id="proj-status" class="status"></p>
+      </div>
+      <div id="proj-display" class="hidden">
+        <div class="proj-head">
+          <span id="proj-q-num" class="proj-q-num"></span>
+          <span id="proj-counter" class="proj-counter"></span>
+        </div>
+        <div id="proj-q-text" class="proj-q-text"></div>
+        <div id="proj-choices" class="proj-choices"></div>
+        <div id="proj-chips" class="proj-chip-grid"></div>
+      </div>
+    </div>
+  </section>
+
   <section id="view-results" class="view hidden">
     <h1>Résultats</h1>
     <p class="empty">Le tableau de bord arrive en phase 4.</p>
   </section>
 
+
+  <!-- Partage par lien / QR -->
+  <div id="share-modal" class="modal hidden">
+    <div class="modal-box">
+      <p id="share-title" class="modal-title"></p>
+      <p id="share-warn" class="share-warn hidden"></p>
+      <div id="share-qr" class="share-qr"></div>
+      <p class="hint">Scannez ce QR code avec l'appareil photo du téléphone,
+        ou copiez le lien ci-dessous. Les données sont contenues dans le lien
+        lui-même : rien n'est envoyé sur un serveur.</p>
+      <input type="text" id="share-link" readonly>
+      <p id="share-status" class="status"></p>
+      <div class="modal-foot">
+        <button id="share-copy" class="btn small primary">Copier le lien</button>
+        <button id="share-close" class="btn small ghost">Fermer</button>
+      </div>
+    </div>
+  </div>
 </main>
 
 <script src="lib/cv.js"></script>
@@ -188,6 +247,11 @@
 <script src="js/editor.js"></script>
 <script src="js/roster.js"></script>
 <script src="js/cards.js"></script>
+<script src="lib/lz-string.min.js"></script>
+<script src="lib/qrcode.js"></script>
+<script src="js/share.js"></script>
+<script src="lib/peerjs.min.js"></script>
+<script src="js/projection.js"></script>
 <script src="js/scan.js"></script>
 <script src="js/app.js"></script>
 </body>

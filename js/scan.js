@@ -73,6 +73,7 @@ const Scan = (() => {
       flash[id] = Date.now();
       renderChips();
       updateCounter();
+      Projection.notifyFromScan(quiz, qIndex, det);
       await Storage.saveSession(session);
     }
   }
@@ -97,6 +98,7 @@ const Scan = (() => {
 
   async function endSession() {
     stopCamera();
+    Projection.phoneDisconnect();
     if (session) await Storage.saveSession(session);
     session = null; quiz = null;
     document.getElementById('scan-live').classList.add('hidden');
@@ -212,6 +214,7 @@ const Scan = (() => {
     acc = {};
     renderChips();
     updateCounter();
+    Projection.notifyFromScan(quiz, qIndex, currentDetections());
   }
 
   async function renderChips() {
@@ -255,6 +258,7 @@ const Scan = (() => {
       btn.classList.toggle('hidden', i >= q.choix.length);
       btn.onclick = async () => {
         det[id] = btn.dataset.letter;
+        Projection.notifyFromScan(quiz, qIndex, det);
         await Storage.saveSession(session);
         modal.classList.add('hidden');
         renderChips(); updateCounter();
@@ -262,6 +266,7 @@ const Scan = (() => {
     });
     document.getElementById('scan-modal-clear').onclick = async () => {
       delete det[id];
+      Projection.notifyFromScan(quiz, qIndex, det);
       await Storage.saveSession(session);
       modal.classList.add('hidden');
       renderChips(); updateCounter();

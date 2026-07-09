@@ -124,6 +124,13 @@ const Roster = (() => {
 
   function init() {
     document.getElementById('btn-save-roster').onclick = save;
+    document.getElementById('btn-share-roster').onclick = async () => {
+      const roster = await save();
+      const filled = roster.filter(e => e.nom || e.prenom).length;
+      if (filled === 0) { setStatus('Rien \u00e0 partager : la classe est vide.', true); return; }
+      Share.open(Share.rosterPayload(roster), 'Classe (' + filled + ' \u00e9l\u00e8ves)',
+        'Ce lien contient les noms des \u00e9l\u00e8ves. Ne le partagez qu\u2019entre vos propres appareils.');
+    };
     document.getElementById('btn-export-roster').onclick = exportCSV;
     const fileInput = document.getElementById('file-import-roster');
     document.getElementById('btn-import-roster').onclick = () => fileInput.click();

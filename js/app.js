@@ -1,7 +1,7 @@
 /* app.js — navigation entre les vues et démarrage. */
 
 const App = (() => {
-  const VIEWS = ['quizzes', 'editor', 'roster', 'cards', 'scan', 'results'];
+  const VIEWS = ['quizzes', 'editor', 'roster', 'cards', 'scan', 'projection', 'results'];
 
   function show(name) {
     VIEWS.forEach(v => {
@@ -16,6 +16,7 @@ const App = (() => {
     });
     if (name === 'roster') Roster.render();
     if (name === 'scan') Scan.onEnter(); else Scan.onLeave();
+    if (name !== 'projection') Projection.onLeavePC();
   }
 
   function init() {
@@ -26,8 +27,10 @@ const App = (() => {
     Roster.init();
     Cards.init();
     Scan.init();
+    Projection.init();
     show('quizzes');
     Editor.renderList();
+    Share.handleIncomingHash();
 
     // Service worker : uniquement en contexte sécurisé (HTTPS / localhost).
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {

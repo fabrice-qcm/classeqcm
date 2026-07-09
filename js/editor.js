@@ -24,11 +24,14 @@ const Editor = (() => {
         (q.questions.length > 1 ? 's' : '') + (date ? ' · modifié le ' + date : '') + '</div></div>' +
         '<div class="quiz-card-actions">' +
         '<button class="btn small ghost" data-act="edit">Modifier</button>' +
+        '<button class="btn small ghost" data-act="share">Partager</button>' +
         '<button class="btn small ghost" data-act="export">Exporter</button>' +
         '<button class="btn small danger" data-act="delete">Supprimer</button></div>';
       card.querySelector('.quiz-card-title').textContent = q.titre;
       card.querySelector('[data-act=edit]').onclick = () => openEditor(q.id);
       card.querySelector('[data-act=export]').onclick = () => exportQuiz(q);
+      card.querySelector('[data-act=share]').onclick = () =>
+        Share.open(Share.quizPayload(q), q.titre);
       card.querySelector('[data-act=delete]').onclick = async () => {
         if (confirm('Supprimer « ' + q.titre + ' » ? Cette action est définitive.')) {
           await Storage.deleteQuiz(q.id);
