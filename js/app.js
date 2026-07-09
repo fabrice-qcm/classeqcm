@@ -2,8 +2,10 @@
 
 const App = (() => {
   const VIEWS = ['quizzes', 'editor', 'roster', 'cards', 'scan', 'projection', 'results'];
+  let currentView = 'quizzes';
 
   function show(name) {
+    currentView = name;
     VIEWS.forEach(v => {
       const el = document.getElementById('view-' + v);
       if (el) el.classList.toggle('hidden', v !== name);
@@ -40,10 +42,16 @@ const App = (() => {
     }
   }
 
-  return { show, init };
+  return { show, init, current: () => currentView };
 })();
 
 document.addEventListener('DOMContentLoaded', App.init);
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden) Scan.onLeave();
+  if (document.hidden) {
+    Scan.onLeave();
+  } else if (App.current() === 'scan') {
+    // Retour de veille ou de multitâche : relancer la caméra automatiquement
+    // si une session est en cours.
+    Scan.onEnter();
+  }
 });

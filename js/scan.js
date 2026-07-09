@@ -16,6 +16,7 @@ const Scan = (() => {
   let lastFrame = 0;
   let videoTrack = null;
 
+  let wakeLock = null;           // verrou anti-veille pendant le scan
   let session = null;            // objet session courant (format d'échange v1)
   let quiz = null;               // questionnaire courant
   let qIndex = 0;                // index de la question courante
@@ -39,9 +40,13 @@ const Scan = (() => {
 
   function markerToAnswer(marker) {
     const c = marker.corners;
-    const angle = Math.atan2(c[1].y - c[0].y, c[1].x - c[0].x) * 180 / Math.PI
-      - screenAngle();
-    const q = ((Math.round(angle / 90) % 4) + 4) % 4;
+    const angle = Math.atan2(c[1].y - c[0].y, c[1].x - c[0].x) * 180 / Math.PI;
+    const rawQ = Math.round(angle / 90);
+    const sQ = Math.round(screenAngle() / 90);
+    // Écran en portrait (0/180) : rotation directe. En paysage (90/270) :
+    // la rotation apparente est en miroir (constaté sur appareil réel).
+    let q = (sQ % 2 === 1) ? (sQ - rawQ) : (rawQ - sQ);
+    q = ((q % 4) + 4) % 4;
     return { 0: 'A', 1: 'D', 2: 'C', 3: 'B' }[q];
   }
 
@@ -111,6 +116,24 @@ const Scan = (() => {
     await startCamera();
   }
 
+  async function resumeSession(s) {
+    const q = s.quiz || await Storage.getQuiz(s.quizId);
+    if (!q) {
+      alert('Le questionnaire de cette session est introuvable sur cet appareil : ' +
+        'importez-le d\u2019abord (onglet Questionnaires).');
+      return;
+    }
+    quiz = q;
+    session = s;
+    qIndex = Math.min(s.qIndex || 0, quiz.questions.length - 1);
+    acc = {}; flash = {};
+    document.getElementById('scan-setup').classList.add('hidden');
+    document.getElementById('scan-live').classList.remove('hidden');
+    document.getElementById('btn-scan-reveal').classList.toggle('hidden', !s.optionReveal);
+    renderQuestion();
+    await startCamera();
+  }
+
   async function endSession() {
     stopCamera();
     Projection.phoneDisconnect();
@@ -144,12 +167,26 @@ const Scan = (() => {
     if (!detector) detector = new AR.Detector({ dictionaryName: 'ARUCO_MIP_36h12', maxHammingDistance: HAMMING });
     running = true;
     requestAnimationFrame(loop);
+    // Empêcher la mise en veille de l'écran pendant le scan (si supporté).
+    try {
+      if ('wakeLock' in navigator) {
+        wakeLock = await navigator.wakeLock.request('screen');
+      }
+    } catch (_) { /* refusé ou non supporté : non bloquant */ }
+    // Si la caméra est coupée par le système (veille, autre app), le signaler.
+    videoTrack.onended = () => {
+      running = false;
+      const st = document.getElementById('scan-cam-status');
+      st.textContent = 'Cam\u00e9ra interrompue par le syst\u00e8me \u2014 touchez \u00ab Relancer la cam\u00e9ra \u00bb.';
+      st.classList.add('error');
+    };
   }
 
   function stopCamera() {
     running = false;
     if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
     videoTrack = null;
+    if (wakeLock) { try { wakeLock.release(); } catch (_) {} wakeLock = null; }
   }
 
   /* Zoom optique/numérique si le téléphone le permet : précieux pour le fond de classe. */
@@ -233,6 +270,7 @@ const Scan = (() => {
 
   /* ---------- interface : question, compteur, pastilles ---------- */
   function renderQuestion() {
+    if (session) { session.qIndex = qIndex; Storage.saveSession(session); }
     const q = quiz.questions[qIndex];
     document.getElementById('scan-q-num').textContent =
       'Question ' + q.num + ' / ' + quiz.questions.length;
@@ -336,11 +374,13 @@ const Scan = (() => {
         '<div class="quiz-card-meta">' + new Date(s.date).toLocaleString('fr-FR') +
         ' \u00b7 ' + total + ' r\u00e9ponse' + (total > 1 ? 's' : '') + '</div></div>' +
         '<div class="quiz-card-actions">' +
+        '<button class="btn small primary" data-act="resume">Reprendre</button>' +
         '<button class="btn small ghost" data-act="share">Partager</button>' +
         '<button class="btn small ghost" data-act="json">Exporter JSON</button>' +
         '<button class="btn small ghost" data-act="csv">Exporter CSV</button>' +
         '<button class="btn small danger" data-act="del">Supprimer</button></div>';
       card.querySelector('.quiz-card-title').textContent = s.quizTitre || s.quizId;
+      card.querySelector('[data-act=resume]').onclick = () => resumeSession(s);
       card.querySelector('[data-act=share]').onclick = () =>
         Share.open(s, 'R\u00e9sultats \u2014 ' + (s.quizTitre || 'session'),
           'Ce lien contient les r\u00e9sultats (num\u00e9ros de cartes, sans noms).');
@@ -377,6 +417,9 @@ const Scan = (() => {
     };
     document.getElementById('scan-q-prev').onclick = () => { qIndex--; renderQuestion(); };
     document.getElementById('scan-q-next').onclick = () => { qIndex++; renderQuestion(); };
+    document.getElementById('btn-restart-cam').onclick = () => {
+      if (session) { stopCamera(); startCamera(); }
+    };
     document.getElementById('btn-scan-reveal').onclick = () => {
       const q = quiz.questions[qIndex];
       const det = currentDetections();
