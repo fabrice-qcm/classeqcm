@@ -12,7 +12,7 @@ const Projection = (() => {
 
   /* ================= côté PC (récepteur / affichage) ================= */
   let hostPeer = null, hostConn = null;
-  let pcQuiz = null, pcState = null, pcRoster = null;
+  let pcQuiz = null, pcState = null, pcRoster = null, pcReveal = null;
 
   function randomCode() {
     // Sans caractères ambigus (0/O, 1/I/L)
@@ -51,6 +51,14 @@ const Projection = (() => {
     pcRoster = await Storage.getRoster();
   }
 
+  function endFromPC() {
+    if (hostConn && hostConn.open) { try { hostConn.send({ t: 'end' }); } catch (_) {} }
+    pcQuiz = null; pcState = null; pcReveal = null;
+    document.getElementById('proj-display').classList.add('hidden');
+    document.getElementById('proj-wait').classList.remove('hidden');
+    setHostStatus('Session termin\u00e9e. Cliquez \u00ab Ouvrir la projection \u00bb pour une nouvelle session.');
+  }
+
   function stopHost() {
     if (hostPeer) { try { hostPeer.destroy(); } catch (_) {} }
     hostPeer = null; hostConn = null; pcQuiz = null; pcState = null;
@@ -62,7 +70,11 @@ const Projection = (() => {
       pcQuiz = msg.quiz;
     }
     if (msg.t === 'state' && typeof msg.qIndex === 'number' && Array.isArray(msg.ids)) {
+      if (pcState && pcState.qIndex !== msg.qIndex) pcReveal = null; // nouvelle question : fin de la correction
       pcState = { qIndex: msg.qIndex, ids: msg.ids.map(Number).filter(n => n >= 1 && n <= 40) };
+    }
+    if (msg.t === 'reveal' && typeof msg.qIndex === 'number') {
+      pcReveal = { qIndex: msg.qIndex, counts: msg.counts || {} };
     }
     renderDisplay();
   }
@@ -79,12 +91,21 @@ const Projection = (() => {
       'Question ' + q.num + ' / ' + pcQuiz.questions.length;
     document.getElementById('proj-q-text').textContent = q.texte;
 
+    const reveal = pcReveal && pcReveal.qIndex === pcState.qIndex ? pcReveal : null;
     const choicesEl = document.getElementById('proj-choices');
     choicesEl.innerHTML = '';
     q.choix.forEach((c, i) => {
+      const l = LETTERS[i];
+      const isGood = reveal && l === q.bonneReponse;
       const div = document.createElement('div');
-      div.className = 'proj-choice';
-      div.innerHTML = '<span class="proj-letter">' + LETTERS[i] + '</span><span class="proj-choice-text"></span>';
+      div.className = 'proj-choice' + (isGood ? ' proj-choice-correct' : '');
+      let html = '<span class="proj-letter">' + l + '</span><span class="proj-choice-text"></span>';
+      if (reveal) {
+        const n = reveal.counts[l] || 0;
+        html += '<span class="proj-choice-count">' + n + ' r\u00e9ponse' + (n > 1 ? 's' : '') +
+          (isGood ? ' \u2713' : '') + '</span>';
+      }
+      div.innerHTML = html;
       div.querySelector('.proj-choice-text').textContent = c;
       choicesEl.appendChild(div);
     });
@@ -136,6 +157,9 @@ const Projection = (() => {
         if (lastQuiz) phoneConn.send({ t: 'quiz', quiz: lastQuiz });
         if (lastState) phoneConn.send(lastState);
       });
+      phoneConn.on('data', msg => {
+        if (msg && msg.t === 'end') Scan.forceEnd('Session termin\u00e9e depuis le PC.');
+      });
       phoneConn.on('close', () => onStatus('Projection d\u00e9connect\u00e9e.', true));
       phoneConn.on('error', () => onStatus('Erreur de connexion.', true));
     });
@@ -148,6 +172,10 @@ const Projection = (() => {
   function phoneDisconnect() {
     if (phonePeer) { try { phonePeer.destroy(); } catch (_) {} }
     phonePeer = null; phoneConn = null;
+  }
+
+  function sendReveal(qIndex, counts) {
+    if (phoneConn && phoneConn.open) phoneConn.send({ t: 'reveal', qIndex: qIndex, counts: counts });
   }
 
   /* Appelé par le mode Scan à chaque changement (verrouillage, question, saisie manuelle). */
@@ -164,6 +192,10 @@ const Projection = (() => {
   function init() {
     const btnStart = document.getElementById('btn-proj-start');
     if (btnStart) btnStart.onclick = startHost;
+    const btnEnd = document.getElementById('btn-proj-end');
+    if (btnEnd) btnEnd.onclick = () => {
+      if (confirm('Terminer la session ? Le t\u00e9l\u00e9phone arr\u00eatera le scan (la session reste enregistr\u00e9e).')) endFromPC();
+    };
     const btnFull = document.getElementById('btn-proj-full');
     if (btnFull) btnFull.onclick = () => {
       const el = document.getElementById('proj-screen');
@@ -184,5 +216,5 @@ const Projection = (() => {
 
   function onLeavePC() { stopHost(); }
 
-  return { init, notifyFromScan, phoneDisconnect, onLeavePC };
+  return { init, notifyFromScan, sendReveal, phoneDisconnect, onLeavePC };
 })();

@@ -303,3 +303,11 @@ select { width: 100%; font: inherit; padding: 0.55rem 0.7rem;
   .rc-prop { grid-template-columns: 2.4rem 1fr 5.5rem; }
   .rc-prop-bar { display: none; }
 }
+
+.proj-choice-correct { background: #dff3e6 !important; border-color: var(--ok) !important; }
+.proj-choice-correct .proj-letter { background: var(--ok); }
+.proj-choice-count { margin-left: auto; font-size: 1.5vw; font-weight: 800; color: var(--encre);
+  white-space: nowrap; }
+.proj-choice-correct .proj-choice-count { color: var(--ok); }
+.proj-end { order: 2; }
+@media (max-width: 900px) { .proj-choice-count { font-size: 0.9rem; } }

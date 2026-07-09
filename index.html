@@ -125,6 +125,12 @@
         <span class="field-label">Questionnaire à faire passer</span>
         <select id="scan-quiz-select"></select>
       </label>
+      <label class="check-row">
+        <input type="checkbox" id="scan-option-reveal">
+        <span>Activer le bouton « Corriger » : affiche la bonne réponse et la
+        répartition des réponses sur le vidéoprojecteur avant de passer à la
+        question suivante</span>
+      </label>
       <button id="btn-start-session" class="btn primary">Démarrer la session</button>
       <h2 class="section-title">Sessions enregistrées</h2>
       <div id="scan-sessions" class="card-list"></div>
@@ -138,6 +144,7 @@
           <div id="scan-q-num" class="scan-q-num"></div>
           <div id="scan-q-text" class="scan-q-text"></div>
         </div>
+        <button id="btn-scan-reveal" class="btn small ghost hidden">Corriger</button>
         <button id="scan-q-next" class="btn small primary">Suivante &rarr;</button>
       </div>
       <div class="scan-video-wrap">
@@ -204,6 +211,7 @@
       </div>
       <div id="proj-display" class="hidden">
         <div class="proj-head">
+          <button id="btn-proj-end" class="btn small danger proj-end">Terminer la session</button>
           <span id="proj-q-num" class="proj-q-num"></span>
           <span id="proj-counter" class="proj-counter"></span>
         </div>

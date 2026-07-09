@@ -26,12 +26,23 @@ const Scan = (() => {
      corners[0]->corners[1] est le bord haut du marqueur en position canonique.
      Carte non tournée (A en haut) : vecteur vers la droite, angle 0°.
      Rotation horaire de la carte (D en haut) : +90°. Anti-horaire (B) : -90°. */
+  /* Angle de rotation de l'interface par rapport à l'orientation naturelle du
+     téléphone. L'image caméra, elle, reste dans le repère du capteur : il faut
+     donc compenser, sinon tenir le téléphone en paysage fausse les lettres. */
+  function screenAngle() {
+    try {
+      if (screen.orientation && typeof screen.orientation.angle === 'number')
+        return screen.orientation.angle;
+    } catch (_) {}
+    return (typeof window.orientation === 'number') ? ((window.orientation % 360) + 360) % 360 : 0;
+  }
+
   function markerToAnswer(marker) {
     const c = marker.corners;
-    const angle = Math.atan2(c[1].y - c[0].y, c[1].x - c[0].x) * 180 / Math.PI;
-    let q = Math.round(angle / 90);
-    if (q === -2) q = 2;
-    return { 0: 'A', 1: 'D', 2: 'C', '-1': 'B' }[q] || null;
+    const angle = Math.atan2(c[1].y - c[0].y, c[1].x - c[0].x) * 180 / Math.PI
+      - screenAngle();
+    const q = ((Math.round(angle / 90) % 4) + 4) % 4;
+    return { 0: 'A', 1: 'D', 2: 'C', 3: 'B' }[q];
   }
 
   /* ---------- accumulateur anti-erreur ---------- */
@@ -80,7 +91,9 @@ const Scan = (() => {
 
   async function startSession(quizObj) {
     quiz = quizObj;
+    const optionReveal = document.getElementById('scan-option-reveal').checked;
     session = {
+      optionReveal: optionReveal,
       type: 'session', version: 1,
       id: 'session-' + Date.now().toString(36),
       quizId: quiz.id, quizTitre: quiz.titre,
@@ -93,6 +106,7 @@ const Scan = (() => {
     await Storage.saveSession(session);
     document.getElementById('scan-setup').classList.add('hidden');
     document.getElementById('scan-live').classList.remove('hidden');
+    document.getElementById('btn-scan-reveal').classList.toggle('hidden', !optionReveal);
     renderQuestion();
     await startCamera();
   }
@@ -184,10 +198,14 @@ const Scan = (() => {
     const ctx = overlay.getContext('2d');
     ctx.clearRect(0, 0, overlay.width, overlay.height);
     const det = session ? currentDetections() : {};
+    const bonne = quiz ? quiz.questions[qIndex].bonneReponse : null;
     for (const m of markers) {
       if (m.id < 1 || m.id > MAX_ID) continue;
+      const letter = markerToAnswer(m);
+      const good = letter === bonne;
       const validated = det[m.id] !== undefined;
-      ctx.strokeStyle = validated ? '#2e7d4f' : '#e6a817';
+      const color = good ? '#2e7d4f' : '#d23b3b';
+      ctx.strokeStyle = validated ? color : '#e6a817';
       ctx.lineWidth = Math.max(3, overlay.width / 300);
       ctx.beginPath();
       m.corners.forEach((c, i) => i === 0 ? ctx.moveTo(c.x, c.y) : ctx.lineTo(c.x, c.y));
@@ -195,10 +213,21 @@ const Scan = (() => {
       ctx.stroke();
       const cx = m.corners.reduce((s, c) => s + c.x, 0) / 4;
       const cy = m.corners.reduce((s, c) => s + c.y, 0) / 4;
-      ctx.fillStyle = validated ? '#2e7d4f' : '#e6a817';
-      ctx.font = 'bold ' + Math.max(18, overlay.width / 40) + 'px sans-serif';
+      const side = Math.hypot(m.corners[1].x - m.corners[0].x, m.corners[1].y - m.corners[0].y);
+      // Grande lettre de la réponse, verte si juste, rouge si fausse
+      const size = Math.max(26, side * 0.6);
+      ctx.font = 'bold ' + size + 'px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('n\u00b0' + m.id + (validated ? ' \u2713' : ''), cx, cy);
+      ctx.lineWidth = size / 8;
+      ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+      ctx.strokeText(letter, cx, cy + size / 3);
+      ctx.fillStyle = color;
+      ctx.fillText(letter, cx, cy + size / 3);
+      // Numéro d'élève au-dessus
+      ctx.font = 'bold ' + Math.max(15, size / 3) + 'px sans-serif';
+      ctx.lineWidth = 3;
+      ctx.strokeText('n\u00b0' + m.id + (validated ? ' \u2713' : ''), cx, cy - size / 2);
+      ctx.fillText('n\u00b0' + m.id + (validated ? ' \u2713' : ''), cx, cy - size / 2);
     }
   }
 
@@ -348,6 +377,14 @@ const Scan = (() => {
     };
     document.getElementById('scan-q-prev').onclick = () => { qIndex--; renderQuestion(); };
     document.getElementById('scan-q-next').onclick = () => { qIndex++; renderQuestion(); };
+    document.getElementById('btn-scan-reveal').onclick = () => {
+      const q = quiz.questions[qIndex];
+      const det = currentDetections();
+      const counts = {};
+      ['A', 'B', 'C', 'D'].slice(0, q.choix.length).forEach(l => counts[l] = 0);
+      Object.values(det).forEach(l => { if (counts[l] !== undefined) counts[l]++; });
+      Projection.sendReveal(qIndex, counts);
+    };
   }
 
   /* Coupe la caméra si on quitte l'onglet Scan ou si l'app passe en arrière-plan. */
@@ -362,5 +399,11 @@ const Scan = (() => {
     }
   }
 
-  return { init, renderSetup, onEnter, onLeave, _test: { markerToAnswer, feed: (m) => feed(m), _acc: () => acc, _reset: () => { acc = {}; } } };
+  async function forceEnd(message) {
+    if (!session) return;
+    await endSession();
+    if (message) alert(message);
+  }
+
+  return { init, renderSetup, onEnter, onLeave, forceEnd, _test: { markerToAnswer, feed: (m) => feed(m), _acc: () => acc, _reset: () => { acc = {}; } } };
 })();
