@@ -17,6 +17,7 @@ const App = (() => {
     if (name === 'roster') Roster.render();
     if (name === 'scan') Scan.onEnter(); else Scan.onLeave();
     if (name !== 'projection') Projection.onLeavePC();
+    if (name === 'results') Results.render();
   }
 
   function init() {
@@ -28,6 +29,7 @@ const App = (() => {
     Cards.init();
     Scan.init();
     Projection.init();
+    Results.init();
     show('quizzes');
     Editor.renderList();
     Share.handleIncomingHash();

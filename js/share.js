@@ -113,6 +113,14 @@ const Share = (() => {
           await Storage.saveRoster(roster);
           App.show('roster');
         }
+      } else if (payload && payload.type === 'session') {
+        if (!Array.isArray(payload.reponses)) throw new Error('Session invalide.');
+        if (confirm('Importer les r\u00e9sultats \u00ab ' + (payload.quizTitre || payload.quizId) + ' \u00bb du ' +
+          new Date(payload.date).toLocaleString('fr-FR') + ' ?')) {
+          await Storage.saveSession(payload);
+          App.show('results');
+          Results.render(payload.id);
+        }
       } else {
         throw new Error('Type de contenu inconnu.');
       }

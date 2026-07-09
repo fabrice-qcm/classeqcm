@@ -84,6 +84,7 @@ const Scan = (() => {
       type: 'session', version: 1,
       id: 'session-' + Date.now().toString(36),
       quizId: quiz.id, quizTitre: quiz.titre,
+      quiz: quiz,
       date: new Date().toISOString(),
       reponses: quiz.questions.map(q => ({ question: q.num, detections: {} }))
     };
@@ -306,10 +307,14 @@ const Scan = (() => {
         '<div class="quiz-card-meta">' + new Date(s.date).toLocaleString('fr-FR') +
         ' \u00b7 ' + total + ' r\u00e9ponse' + (total > 1 ? 's' : '') + '</div></div>' +
         '<div class="quiz-card-actions">' +
+        '<button class="btn small ghost" data-act="share">Partager</button>' +
         '<button class="btn small ghost" data-act="json">Exporter JSON</button>' +
         '<button class="btn small ghost" data-act="csv">Exporter CSV</button>' +
         '<button class="btn small danger" data-act="del">Supprimer</button></div>';
       card.querySelector('.quiz-card-title').textContent = s.quizTitre || s.quizId;
+      card.querySelector('[data-act=share]').onclick = () =>
+        Share.open(s, 'R\u00e9sultats \u2014 ' + (s.quizTitre || 'session'),
+          'Ce lien contient les r\u00e9sultats (num\u00e9ros de cartes, sans noms).');
       card.querySelector('[data-act=json]').onclick = () =>
         IO.download('session-' + IO.slug(s.quizTitre || 'scan') + '-' + s.id + '.json',
           JSON.stringify(s, null, 2), 'application/json');
