@@ -104,11 +104,25 @@ const Results = (() => {
     renderSummary(); renderStudents(); renderQuestions();
   }
 
-  function cellMark(a) {
-    if (a.letter === null) return '<td class="rc-cell rc-none">\u2013</td>';
-    return a.ok
-      ? '<td class="rc-cell rc-ok">\u2713</td>'
-      : '<td class="rc-cell rc-ko">\u2717</td>';
+  function escapeAttr(t) {
+    return String(t).replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+      .replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function cellMark(a, question, student) {
+    let reponse;
+    if (a.letter === null) {
+      reponse = '(aucune)';
+    } else {
+      const idx = LETTERS.indexOf(a.letter);
+      const texte = question.choix[idx];
+      reponse = a.letter + (texte ? ' \u2014 ' + texte : '');
+    }
+    const tip = 'Question : ' + question.texte + '\n' +
+      'R\u00e9ponse de ' + student.label + ' : ' + reponse;
+    const cls = a.letter === null ? 'rc-none' : (a.ok ? 'rc-ok' : 'rc-ko');
+    const mark = a.letter === null ? '\u2013' : (a.ok ? '\u2713' : '\u2717');
+    return '<td class="rc-cell ' + cls + '" title="' + escapeAttr(tip) + '">' + mark + '</td>';
   }
 
   /* ---------- onglet 1 : résumé (matrice) ---------- */
@@ -124,7 +138,7 @@ const Results = (() => {
     html += '<th>Score</th></tr></thead><tbody>';
     data.students.forEach(s => {
       html += '<tr><td class="rc-name"></td>';
-      s.answers.forEach(a => { html += cellMark(a); });
+      s.answers.forEach((a, qi) => { html += cellMark(a, data.quiz.questions[qi], s); });
       html += '<td class="rc-score">' + s.correct + '/' + data.quiz.questions.length +
         '<span class="rc-qpct">' + s.pct + '\u00a0%</span></td></tr>';
     });

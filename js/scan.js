@@ -27,26 +27,47 @@ const Scan = (() => {
      corners[0]->corners[1] est le bord haut du marqueur en position canonique.
      Carte non tournée (A en haut) : vecteur vers la droite, angle 0°.
      Rotation horaire de la carte (D en haut) : +90°. Anti-horaire (B) : -90°. */
-  /* Angle de rotation de l'interface par rapport à l'orientation naturelle du
-     téléphone. L'image caméra, elle, reste dans le repère du capteur : il faut
-     donc compenser, sinon tenir le téléphone en paysage fausse les lettres. */
-  function screenAngle() {
+  /* ---------- orientation physique du téléphone ----------
+     L'image caméra reste dans le repère du capteur quand on tourne le téléphone.
+     screen.orientation ne reflète que l'interface (0 si la rotation auto est
+     verrouillée) : on lit donc l'ACCÉLÉROMÈTRE, la gravité indiquant toujours
+     où est le bas, quel que soit l'état de l'écran.
+     Relevés terrain : rotation antihoraire -> mesures décalées de +90°,
+     horaire -> -90°. Correction : q = mesure - orientation physique. */
+  let accel = { x: 0, y: 0, ok: false };
+  let lastPhysicalQ = 0;
+
+  function onMotion(e) {
+    const g = e.accelerationIncludingGravity;
+    if (!g || g.x === null || g.y === null) return;
+    accel = { x: g.x, y: g.y, ok: true };
+  }
+
+  function physicalQ() {
+    if (accel.ok) {
+      const { x, y } = accel;
+      // Seuil à ~5 m/s² avec hystérésis : téléphone incliné vers le bas
+      // (gravité surtout sur z) -> on conserve la dernière orientation connue.
+      if (y > 5) lastPhysicalQ = 0;        // portrait
+      else if (x > 5) lastPhysicalQ = 1;   // tourné antihoraire
+      else if (y < -5) lastPhysicalQ = 2;  // tête en bas
+      else if (x < -5) lastPhysicalQ = 3;  // tourné horaire
+      return lastPhysicalQ;
+    }
+    // Repli sans capteur : angle de l'interface (moins fiable)
+    let a = 0;
     try {
-      if (screen.orientation && typeof screen.orientation.angle === 'number')
-        return screen.orientation.angle;
+      if (screen.orientation && typeof screen.orientation.angle === 'number') a = screen.orientation.angle;
+      else if (typeof window.orientation === 'number') a = ((window.orientation % 360) + 360) % 360;
     } catch (_) {}
-    return (typeof window.orientation === 'number') ? ((window.orientation % 360) + 360) % 360 : 0;
+    return ((Math.round(a / 90) % 4) + 4) % 4;
   }
 
   function markerToAnswer(marker) {
     const c = marker.corners;
     const angle = Math.atan2(c[1].y - c[0].y, c[1].x - c[0].x) * 180 / Math.PI;
     const rawQ = Math.round(angle / 90);
-    const sQ = Math.round(screenAngle() / 90);
-    // Écran en portrait (0/180) : rotation directe. En paysage (90/270) :
-    // la rotation apparente est en miroir (constaté sur appareil réel).
-    let q = (sQ % 2 === 1) ? (sQ - rawQ) : (rawQ - sQ);
-    q = ((q % 4) + 4) % 4;
+    const q = (((rawQ - physicalQ()) % 4) + 4) % 4;
     return { 0: 'A', 1: 'D', 2: 'C', 3: 'B' }[q];
   }
 
@@ -166,6 +187,8 @@ const Scan = (() => {
     setupZoom();
     if (!detector) detector = new AR.Detector({ dictionaryName: 'ARUCO_MIP_36h12', maxHammingDistance: HAMMING });
     running = true;
+    accel.ok = false;
+    window.addEventListener('devicemotion', onMotion);
     requestAnimationFrame(loop);
     // Empêcher la mise en veille de l'écran pendant le scan (si supporté).
     try {
@@ -184,6 +207,7 @@ const Scan = (() => {
 
   function stopCamera() {
     running = false;
+    window.removeEventListener('devicemotion', onMotion);
     if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
     videoTrack = null;
     if (wakeLock) { try { wakeLock.release(); } catch (_) {} wakeLock = null; }
@@ -405,8 +429,30 @@ const Scan = (() => {
     });
   }
 
+  /* ---------- calibrage intégré ---------- */
+  function calibrageQuiz() {
+    const L = ['A', 'B', 'C', 'D'];
+    return {
+      type: 'quiz', version: 1, id: 'quiz-calibrage',
+      titre: 'Calibrage des cartes',
+      modifie: new Date().toISOString(),
+      questions: L.map((l, i) => ({
+        num: i + 1,
+        texte: 'Tenez votre carte avec la lettre ' + l + ' en haut',
+        choix: ['La lettre A est en haut', 'La lettre B est en haut',
+                'La lettre C est en haut', 'La lettre D est en haut'],
+        bonneReponse: l
+      }))
+    };
+  }
+
   /* ---------- branchement ---------- */
   function init() {
+    document.getElementById('btn-calibrage').onclick = async () => {
+      const q = calibrageQuiz();
+      await Storage.saveQuiz(q);
+      startSession(q);
+    };
     document.getElementById('btn-start-session').onclick = async () => {
       const id = document.getElementById('scan-quiz-select').value;
       const q = await Storage.getQuiz(id);

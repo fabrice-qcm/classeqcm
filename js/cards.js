@@ -59,9 +59,9 @@ const Cards = (() => {
     // angle jsPDF : sens antihoraire. Chaque lettre est orientée pour être
     // lisible quand SON bord est en haut de la carte.
     letterAt(pdf, 'A', cx, my - gap, 0);
-    letterAt(pdf, 'B', mx + MARKER_MM + gap, cy, 90);
+    letterAt(pdf, 'B', mx + MARKER_MM + gap, cy, 270);
     letterAt(pdf, 'C', cx, my + MARKER_MM + gap + 3, 180);
-    letterAt(pdf, 'D', mx - gap, cy, 270);
+    letterAt(pdf, 'D', mx - gap, cy, 90);
 
     // Numéro d'élève dans les 4 coins (lisible quelle que soit la rotation).
     pdf.setFontSize(9);
