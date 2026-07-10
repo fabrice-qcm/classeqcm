@@ -116,9 +116,9 @@ const Results = (() => {
     } else {
       const idx = LETTERS.indexOf(a.letter);
       const texte = question.choix[idx];
-      reponse = a.letter + (texte ? ' \u2014 ' + texte : '');
+      reponse = a.letter + (texte ? ' \u2014 ' + MathText.plain(texte) : '');
     }
-    const tip = 'Question : ' + question.texte + '\n' +
+    const tip = 'Question : ' + MathText.plain(question.texte) + '\n' +
       'R\u00e9ponse de ' + student.label + ' : ' + reponse;
     const cls = a.letter === null ? 'rc-none' : (a.ok ? 'rc-ok' : 'rc-ko');
     const mark = a.letter === null ? '\u2013' : (a.ok ? '\u2713' : '\u2717');
@@ -211,8 +211,8 @@ const Results = (() => {
       if (pq.invalid) extras.push(pq.invalid + ' r\u00e9ponse(s) hors choix propos\u00e9s (compt\u00e9es fausses)');
       if (extras.length) inner += '<p class="q-hint">' + extras.join(' \u00b7 ') + '</p>';
       block.innerHTML = inner;
-      block.querySelector('.rc-qtext').textContent = pq.q.texte;
-      block.querySelectorAll('.rc-prop-text').forEach((el, i) => { el.textContent = pq.q.choix[i]; });
+      MathText.render(block.querySelector('.rc-qtext'), pq.q.texte);
+      block.querySelectorAll('.rc-prop-text').forEach((el, i) => { MathText.render(el, pq.q.choix[i]); });
       wrap.appendChild(block);
     });
   }
@@ -250,10 +250,10 @@ const Results = (() => {
     L.push('');
     L.push('=== PAR QUESTION ===');
     data.perQuestion.forEach((pq, qi) => {
-      L.push('Q' + (qi + 1) + '. ' + pq.q.texte);
+      L.push('Q' + (qi + 1) + '. ' + MathText.plain(pq.q.texte));
       LETTERS.slice(0, pq.q.choix.length).forEach(l => {
         L.push('   ' + l + (l === pq.q.bonneReponse ? ' (bonne r\u00e9ponse)' : '') +
-          ' \u2014 ' + pq.q.choix[LETTERS.indexOf(l)] + ' : ' + pq.counts[l] + ' r\u00e9ponse(s)');
+          ' \u2014 ' + MathText.plain(pq.q.choix[LETTERS.indexOf(l)]) + ' : ' + pq.counts[l] + ' r\u00e9ponse(s)');
       });
       L.push('   Justes : ' + pq.correct + '/' + pq.answered +
         (pq.pct === null ? '' : ' (' + pq.pct + ' %)') +

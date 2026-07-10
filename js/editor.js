@@ -98,8 +98,17 @@ const Editor = (() => {
     text.type = 'text';
     text.placeholder = 'Énoncé de la question';
     text.value = q.texte;
-    text.oninput = () => { q.texte = text.value; };
     block.appendChild(text);
+    const textPrev = document.createElement('div');
+    textPrev.className = 'math-preview hidden';
+    block.appendChild(textPrev);
+    const updateTextPrev = () => {
+      const has = text.value.indexOf('$') !== -1;
+      textPrev.classList.toggle('hidden', !has);
+      if (has) MathText.render(textPrev, text.value);
+    };
+    text.oninput = () => { q.texte = text.value; updateTextPrev(); };
+    updateTextPrev();
 
     const choices = document.createElement('div');
     choices.className = 'choices';
@@ -124,8 +133,10 @@ const Editor = (() => {
   }
 
   function choiceRow(q, ci) {
+    const wrap = document.createElement('div');
     const row = document.createElement('div');
     row.className = 'choice-row';
+    wrap.appendChild(row);
 
     const letter = document.createElement('button');
     letter.className = 'choice-letter';
@@ -139,8 +150,17 @@ const Editor = (() => {
     input.type = 'text';
     input.placeholder = 'Choix ' + LETTERS[ci];
     input.value = q.choix[ci];
-    input.oninput = () => { q.choix[ci] = input.value; };
     row.appendChild(input);
+    const prev = document.createElement('div');
+    prev.className = 'math-preview hidden';
+    wrap.appendChild(prev);
+    const updatePrev = () => {
+      const has = input.value.indexOf('$') !== -1;
+      prev.classList.toggle('hidden', !has);
+      if (has) MathText.render(prev, input.value);
+    };
+    input.oninput = () => { q.choix[ci] = input.value; updatePrev(); };
+    updatePrev();
 
     if (q.choix.length > 2) {
       const rm = document.createElement('button');
@@ -154,7 +174,7 @@ const Editor = (() => {
       };
       row.appendChild(rm);
     }
-    return row;
+    return wrap;
   }
 
   /* ---------- validation + enregistrement ---------- */

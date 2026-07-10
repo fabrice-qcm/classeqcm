@@ -1,7 +1,7 @@
 /* sw.js — met en cache toute l'application au premier chargement,
    puis sert tout depuis le cache : fonctionnement 100 % hors ligne. */
 
-const CACHE = 'classeqcm-v10'; // Incrémenter à chaque mise à jour de l'app.
+const CACHE = 'classeqcm-v11'; // Incrémenter à chaque mise à jour de l'app.
 
 const FILES = [
   './',
@@ -19,6 +19,30 @@ const FILES = [
   './js/projection.js',
   './js/results.js',
   './lib/peerjs.min.js',
+  './js/mathtext.js',
+  './lib/katex/katex.min.js',
+  './lib/katex/katex.min.css',
+  './lib/katex/fonts/KaTeX_AMS-Regular.woff2',
+  './lib/katex/fonts/KaTeX_Caligraphic-Bold.woff2',
+  './lib/katex/fonts/KaTeX_Caligraphic-Regular.woff2',
+  './lib/katex/fonts/KaTeX_Fraktur-Bold.woff2',
+  './lib/katex/fonts/KaTeX_Fraktur-Regular.woff2',
+  './lib/katex/fonts/KaTeX_Main-Bold.woff2',
+  './lib/katex/fonts/KaTeX_Main-BoldItalic.woff2',
+  './lib/katex/fonts/KaTeX_Main-Italic.woff2',
+  './lib/katex/fonts/KaTeX_Main-Regular.woff2',
+  './lib/katex/fonts/KaTeX_Math-BoldItalic.woff2',
+  './lib/katex/fonts/KaTeX_Math-Italic.woff2',
+  './lib/katex/fonts/KaTeX_SansSerif-Bold.woff2',
+  './lib/katex/fonts/KaTeX_SansSerif-Italic.woff2',
+  './lib/katex/fonts/KaTeX_SansSerif-Regular.woff2',
+  './lib/katex/fonts/KaTeX_Script-Regular.woff2',
+  './lib/katex/fonts/KaTeX_Size1-Regular.woff2',
+  './lib/katex/fonts/KaTeX_Size2-Regular.woff2',
+  './lib/katex/fonts/KaTeX_Size3-Regular.woff2',
+  './lib/katex/fonts/KaTeX_Size4-Regular.woff2',
+  './lib/katex/fonts/KaTeX_Typewriter-Regular.woff2',
+
   './lib/lz-string.min.js',
   './lib/qrcode.js',
   './lib/cv.js',

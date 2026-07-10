@@ -89,7 +89,7 @@ const Projection = (() => {
     if (!q) return;
     document.getElementById('proj-q-num').textContent =
       'Question ' + q.num + ' / ' + pcQuiz.questions.length;
-    document.getElementById('proj-q-text').textContent = q.texte;
+    MathText.render(document.getElementById('proj-q-text'), q.texte);
 
     const reveal = pcReveal && pcReveal.qIndex === pcState.qIndex ? pcReveal : null;
     const choicesEl = document.getElementById('proj-choices');
@@ -106,7 +106,7 @@ const Projection = (() => {
           (isGood ? ' \u2713' : '') + '</span>';
       }
       div.innerHTML = html;
-      div.querySelector('.proj-choice-text').textContent = c;
+      MathText.render(div.querySelector('.proj-choice-text'), c);
       choicesEl.appendChild(div);
     });
 

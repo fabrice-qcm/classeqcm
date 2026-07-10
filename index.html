@@ -6,6 +6,7 @@
 <meta name="theme-color" content="#1b3a6b">
 <title>ClasseQCM — sondages par cartes-réponses</title>
 <link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="lib/katex/katex.min.css">
 <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
@@ -63,6 +64,10 @@
       <span class="field-label">Titre du questionnaire</span>
       <input type="text" id="quiz-title" placeholder="Ex. : Fractions — évaluation 3" maxlength="120">
     </label>
+    <p class="hint">Écritures mathématiques : placez la formule entre deux symboles
+      dollar — <code>$\frac{3}{4}$</code> pour une fraction empilée,
+      <code>$5^2$</code> pour une puissance, <code>$\sqrt{16}$</code> pour une racine.
+      Un aperçu s'affiche sous le champ dès qu'un $ est saisi.</p>
     <div id="question-list"></div>
     <button id="btn-add-question" class="btn dashed">+ Ajouter une question</button>
     <p id="editor-status" class="status" role="status"></p>
@@ -286,6 +291,8 @@
 <script src="js/editor.js"></script>
 <script src="js/roster.js"></script>
 <script src="js/cards.js"></script>
+<script src="lib/katex/katex.min.js"></script>
+<script src="js/mathtext.js"></script>
 <script src="lib/lz-string.min.js"></script>
 <script src="lib/qrcode.js"></script>
 <script src="js/share.js"></script>

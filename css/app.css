@@ -311,3 +311,10 @@ select { width: 100%; font: inherit; padding: 0.55rem 0.7rem;
 .proj-choice-correct .proj-choice-count { color: var(--ok); }
 .proj-end { order: 2; }
 @media (max-width: 900px) { .proj-choice-count { font-size: 0.9rem; } }
+
+.math-preview { margin: 0.25rem 0 0.1rem 0.2rem; padding: 0.3rem 0.6rem;
+  background: #f2f5fa; border-left: 3px solid var(--encre-claire);
+  border-radius: 0 6px 6px 0; font-size: 1rem; }
+.choices > div + div { margin-top: 0.45rem; }
+.choices { gap: 0 !important; }
+code { background: #eef2f8; padding: 0.05rem 0.3rem; border-radius: 4px; font-size: 0.85em; }

@@ -298,7 +298,7 @@ const Scan = (() => {
     const q = quiz.questions[qIndex];
     document.getElementById('scan-q-num').textContent =
       'Question ' + q.num + ' / ' + quiz.questions.length;
-    document.getElementById('scan-q-text').textContent = q.texte;
+    MathText.render(document.getElementById('scan-q-text'), q.texte);
     document.getElementById('scan-q-prev').disabled = qIndex === 0;
     document.getElementById('scan-q-next').textContent =
       qIndex === quiz.questions.length - 1 ? 'Derni\u00e8re question' : 'Question suivante \u2192';
