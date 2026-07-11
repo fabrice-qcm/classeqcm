@@ -32,7 +32,7 @@ const Results = (() => {
       const answered = answers.filter(a => a.letter !== null).length;
       const correct = answers.filter(a => a.ok === true).length;
       return {
-        id: id, nom: e.nom || '', prenom: e.prenom || '',
+        id: id, nom: e.nom || '', prenom: e.prenom || '', niveau: e.niveau || '',
         label: (e.prenom || e.nom) ? [e.prenom, e.nom].filter(Boolean).join(' ') : 'Carte ' + id,
         answers: answers, answered: answered, correct: correct,
         // Score calculé sur le TOTAL des questions (une non-réponse compte fausse).
@@ -222,14 +222,15 @@ const Results = (() => {
     if (!data) return;
     const n = data.quiz.questions.length;
     const lines = [];
-    lines.push('numero;nom;prenom;' + data.quiz.questions.map((_, i) => 'Q' + (i + 1)).join(';') + ';justes;repondues;pourcentage');
+    lines.push('numero;nom;prenom;' + data.quiz.questions.map((_, i) => 'Q' + (i + 1)).join(';') + ';justes;total;repondues;precision');
+    lines.push(';;enonce;' + data.quiz.questions.map(q => MathText.plain(q.texte).replace(/[;\r\n]/g, ' ')).join(';') + ';;;');
     data.students.forEach(s => {
       lines.push([s.id, s.nom, s.prenom,
         ...s.answers.map(a => a.letter === null ? '' : a.letter + (a.ok ? ' (juste)' : ' (faux)')),
-        s.correct, s.answered, s.pct + '%'].join(';'));
+        s.correct, data.quiz.questions.length, s.answered, s.pct + '%'].join(';'));
     });
     lines.push(['', '', '% justes par question',
-      ...data.perQuestion.map(pq => pq.pct === null ? '' : pq.pct + '%'), '', '', ''].join(';'));
+      ...data.perQuestion.map(pq => pq.pct === null ? '' : pq.pct + '%'), '', '', '', ''].join(';'));
     IO.download('resultats-' + IO.slug(data.quiz.titre) + '.csv',
       '\uFEFF' + lines.join('\r\n'), 'text/csv;charset=utf-8');
   }
@@ -248,6 +249,22 @@ const Results = (() => {
         ' (' + (data.quiz.questions.length - s.answered) + ' sans r\u00e9ponse)' : ''));
     });
     L.push('');
+    L.push('=== D\u00c9TAIL DES R\u00c9PONSES PAR \u00c9L\u00c8VE ===');
+    data.students.forEach(s => {
+      L.push(s.label + ' (carte ' + s.id + ')');
+      data.quiz.questions.forEach((q, qi) => {
+        const a = s.answers[qi];
+        let rep;
+        if (a.letter === null) rep = 'sans r\u00e9ponse';
+        else {
+          const idx = LETTERS.indexOf(a.letter);
+          rep = a.letter + (q.choix[idx] ? ' (' + MathText.plain(q.choix[idx]) + ')' : '') +
+            ' \u2014 ' + (a.ok ? 'juste' : 'faux, attendu ' + q.bonneReponse);
+        }
+        L.push('   Q' + q.num + '. ' + MathText.plain(q.texte) + ' \u2192 ' + rep);
+      });
+      L.push('');
+    });
     L.push('=== PAR QUESTION ===');
     data.perQuestion.forEach((pq, qi) => {
       L.push('Q' + (qi + 1) + '. ' + MathText.plain(pq.q.texte));
@@ -261,6 +278,113 @@ const Results = (() => {
       L.push('');
     });
     IO.download('resultats-' + IO.slug(data.quiz.titre) + '.txt', L.join('\r\n'), 'text/plain;charset=utf-8');
+  }
+
+  /* ---------- export Excel multi-feuilles ---------- */
+  function exportXLSX() {
+    if (!data) return;
+    const nq = data.quiz.questions.length;
+    const P = t => MathText.plain(t);
+    const wb = XLSX.utils.book_new();
+
+    // Feuille 1 : Résumé (matrice élèves x questions, lettres répondues)
+    const resume = [];
+    resume.push(['N\u00b0', 'Nom', 'Pr\u00e9nom',
+      ...data.quiz.questions.map((_, i) => 'Q' + (i + 1)), 'Justes', 'Total', 'Pr\u00e9cision']);
+    resume.push(['', '', '\u00c9nonc\u00e9 \u2192',
+      ...data.quiz.questions.map(q => P(q.texte)), '', '', '']);
+    data.students.forEach(s => {
+      resume.push([s.id, s.nom, s.prenom,
+        ...s.answers.map(a => a.letter === null ? '' : a.letter),
+        s.correct, nq, s.pct / 100]);
+    });
+    resume.push(['', '', 'R\u00e9ussite par question \u2192',
+      ...data.perQuestion.map(pq => pq.pct === null ? '' : pq.pct / 100), '', '', '']);
+    const wsResume = XLSX.utils.aoa_to_sheet(resume);
+    wsResume['!cols'] = [{ wch: 4 }, { wch: 16 }, { wch: 14 },
+      ...data.quiz.questions.map(() => ({ wch: 6 })), { wch: 7 }, { wch: 6 }, { wch: 10 }];
+    // Format pourcentage sur la colonne Précision et la ligne de réussite
+    for (let i = 0; i < data.students.length; i++) {
+      const cell = wsResume[XLSX.utils.encode_cell({ r: 2 + i, c: 3 + nq + 2 })];
+      if (cell) cell.z = '0%';
+    }
+    for (let qi = 0; qi < nq; qi++) {
+      const cell = wsResume[XLSX.utils.encode_cell({ r: 2 + data.students.length, c: 3 + qi })];
+      if (cell) cell.z = '0%';
+    }
+    XLSX.utils.book_append_sheet(wb, wsResume, 'R\u00e9sum\u00e9');
+
+    // Feuille 2 : Détail réponses (une ligne par élève et par question)
+    const detail = [['N\u00b0 \u00e9l\u00e8ve', 'Nom', 'Pr\u00e9nom', 'N\u00b0 question',
+      '\u00c9nonc\u00e9', 'R\u00e9ponse', 'Texte de la r\u00e9ponse',
+      'Bonne r\u00e9ponse', 'Texte de la bonne r\u00e9ponse', 'Juste']];
+    data.students.forEach(s => {
+      data.quiz.questions.forEach((q, qi) => {
+        const a = s.answers[qi];
+        const idx = a.letter === null ? -1 : LETTERS.indexOf(a.letter);
+        detail.push([s.id, s.nom, s.prenom, q.num, P(q.texte),
+          a.letter === null ? 'sans r\u00e9ponse' : a.letter,
+          idx >= 0 && q.choix[idx] ? P(q.choix[idx]) : '',
+          q.bonneReponse, P(q.choix[LETTERS.indexOf(q.bonneReponse)] || ''),
+          a.letter === null ? '' : (a.ok ? 'VRAI' : 'FAUX')]);
+      });
+    });
+    const wsDetail = XLSX.utils.aoa_to_sheet(detail);
+    wsDetail['!cols'] = [{ wch: 8 }, { wch: 16 }, { wch: 14 }, { wch: 10 }, { wch: 45 },
+      { wch: 12 }, { wch: 30 }, { wch: 12 }, { wch: 30 }, { wch: 7 }];
+    XLSX.utils.book_append_sheet(wb, wsDetail, 'D\u00e9tail r\u00e9ponses');
+
+    // Feuille 3 : Questions (statistiques et répartition)
+    const ques = [['N\u00b0', '\u00c9nonc\u00e9', 'Choix A', 'Choix B', 'Choix C', 'Choix D',
+      'Bonne r\u00e9ponse', 'R\u00e9p. A', 'R\u00e9p. B', 'R\u00e9p. C', 'R\u00e9p. D',
+      'Sans r\u00e9ponse', 'Hors choix', 'Justes', 'R\u00e9pondants', 'Pr\u00e9cision']];
+    data.perQuestion.forEach(pq => {
+      ques.push([pq.q.num, P(pq.q.texte),
+        ...[0, 1, 2, 3].map(i => pq.q.choix[i] ? P(pq.q.choix[i]) : ''),
+        pq.q.bonneReponse,
+        ...LETTERS.map(l => pq.counts[l] !== undefined ? pq.counts[l] : ''),
+        pq.none, pq.invalid, pq.correct, pq.answered,
+        pq.pct === null ? '' : pq.pct / 100]);
+    });
+    const wsQues = XLSX.utils.aoa_to_sheet(ques);
+    wsQues['!cols'] = [{ wch: 4 }, { wch: 45 }, { wch: 20 }, { wch: 20 }, { wch: 20 }, { wch: 20 },
+      { wch: 8 }, { wch: 7 }, { wch: 7 }, { wch: 7 }, { wch: 7 }, { wch: 9 }, { wch: 9 },
+      { wch: 7 }, { wch: 11 }, { wch: 10 }];
+    for (let i = 0; i < data.perQuestion.length; i++) {
+      const cell = wsQues[XLSX.utils.encode_cell({ r: 1 + i, c: 15 })];
+      if (cell) cell.z = '0%';
+    }
+    XLSX.utils.book_append_sheet(wb, wsQues, 'Questions');
+
+    // Feuille 4 : Participants
+    const part = [['N\u00b0', 'Nom', 'Pr\u00e9nom', 'Niveau', 'R\u00e9pondues', 'Justes',
+      'Total questions', 'Pr\u00e9cision']];
+    data.students.forEach(s => {
+      part.push([s.id, s.nom, s.prenom, s.niveau || '', s.answered, s.correct, nq, s.pct / 100]);
+    });
+    const wsPart = XLSX.utils.aoa_to_sheet(part);
+    wsPart['!cols'] = [{ wch: 4 }, { wch: 16 }, { wch: 14 }, { wch: 8 }, { wch: 10 },
+      { wch: 7 }, { wch: 14 }, { wch: 10 }];
+    for (let i = 0; i < data.students.length; i++) {
+      const cell = wsPart[XLSX.utils.encode_cell({ r: 1 + i, c: 7 })];
+      if (cell) cell.z = '0%';
+    }
+    XLSX.utils.book_append_sheet(wb, wsPart, 'Participants');
+
+    // Feuille 5 : Infos de session
+    const infos = [
+      ['Questionnaire', P(data.quiz.titre)],
+      ['Date de la session', new Date(data.session.date).toLocaleString('fr-FR')],
+      ['Participants', data.students.length],
+      ['Questions', nq],
+      ['Export g\u00e9n\u00e9r\u00e9 le', new Date().toLocaleString('fr-FR')],
+      ['Note', 'Pr\u00e9cision = justes / total des questions (une non-r\u00e9ponse compte fausse).']
+    ];
+    const wsInfos = XLSX.utils.aoa_to_sheet(infos);
+    wsInfos['!cols'] = [{ wch: 22 }, { wch: 60 }];
+    XLSX.utils.book_append_sheet(wb, wsInfos, 'Infos');
+
+    XLSX.writeFile(wb, 'resultats-' + IO.slug(data.quiz.titre) + '.xlsx');
   }
 
   /* ---------- import fichier ---------- */
@@ -282,6 +406,7 @@ const Results = (() => {
     const fi = document.getElementById('file-import-session');
     document.getElementById('btn-import-session').onclick = () => fi.click();
     fi.onchange = () => { if (fi.files[0]) importSessionFile(fi.files[0]); fi.value = ''; };
+    document.getElementById('btn-export-results-xlsx').onclick = exportXLSX;
     document.getElementById('btn-export-results-csv').onclick = exportCSV;
     document.getElementById('btn-export-results-txt').onclick = exportTXT;
     document.querySelectorAll('.subtab').forEach(t => {
