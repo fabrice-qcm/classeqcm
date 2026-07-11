@@ -356,3 +356,11 @@ code { background: #eef2f8; padding: 0.05rem 0.3rem; border-radius: 4px; font-si
   .proj-tile-count { font-size: 0.85rem; padding: 0.15rem 0.6rem; }
   .proj-tiles-3, .proj-tiles-4 { grid-template-columns: 1fr 1fr; grid-template-rows: none; }
 }
+
+/* ---- projection locale (superposée au scan) ---- */
+.local-proj { position: fixed; inset: 0; background: #fff; z-index: 40;
+  display: flex; flex-direction: column; padding: 1.5vw 2vw; gap: 1vw; overflow: auto; }
+.local-proj-bar { display: flex; align-items: center; gap: 0.8vw; flex-wrap: wrap; }
+.local-proj-mid { flex: 1; display: flex; align-items: baseline; gap: 1vw;
+  justify-content: center; }
+.local-proj .proj-tiles { flex: 1; min-height: 40vh; }

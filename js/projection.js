@@ -141,6 +141,63 @@ const Projection = (() => {
     el.style.color = isOk ? 'var(--ok)' : '';
   }
 
+  /* ================= mode local (scan et projection sur le même écran) ===== */
+  let localRoster = null;
+
+  async function renderLocal(quiz, qIndex, detections, revealCounts) {
+    if (!localRoster) localRoster = await Storage.getRoster();
+    const q = quiz.questions[qIndex];
+    document.getElementById('lp-q-num').textContent =
+      'Question ' + q.num + ' / ' + quiz.questions.length;
+    MathText.render(document.getElementById('lp-q-text'), q.texte);
+    document.getElementById('lp-prev').disabled = qIndex === 0;
+    document.getElementById('lp-next').disabled = qIndex === quiz.questions.length - 1;
+
+    // Élèves gris/bleu + compteur
+    const answered = new Set(Object.keys(detections).map(Number));
+    const grid = document.getElementById('lp-chips');
+    grid.innerHTML = '';
+    const hasRoster = localRoster.some(r => r.nom || r.prenom);
+    let expected = 0;
+    for (let id = 1; id <= 40; id++) {
+      const e = localRoster[id - 1];
+      const inClass = e && (e.nom || e.prenom);
+      if (hasRoster && !inClass) continue;
+      expected++;
+      const chip = document.createElement('div');
+      chip.className = 'proj-chip' + (answered.has(id) ? ' proj-chip-on' : '');
+      chip.textContent = inClass
+        ? (e.prenom || e.nom) + (e.prenom && e.nom ? ' ' + e.nom.charAt(0) + '.' : '')
+        : 'n\u00b0 ' + id;
+      grid.appendChild(chip);
+    }
+    document.getElementById('lp-counter').textContent = answered.size + ' / ' + expected;
+
+    // Tuiles colorées, avec correction éventuelle
+    const choicesEl = document.getElementById('lp-choices');
+    choicesEl.innerHTML = '';
+    choicesEl.className = 'proj-tiles proj-tiles-' + q.choix.length;
+    q.choix.forEach((c, i) => {
+      const l = LETTERS[i];
+      const isGood = revealCounts && l === q.bonneReponse;
+      const div = document.createElement('div');
+      div.className = 'proj-tile proj-tile-' + i +
+        (revealCounts ? (isGood ? ' proj-tile-good' : ' proj-tile-dim') : '');
+      let html = '<span class="proj-tile-letter">' + l + '</span>' +
+        '<span class="proj-tile-text"></span>';
+      if (revealCounts) {
+        const n = revealCounts[l] || 0;
+        html += '<span class="proj-tile-count">' + n + ' r\u00e9ponse' + (n > 1 ? 's' : '') +
+          (isGood ? ' \u2713' : '') + '</span>';
+      }
+      div.innerHTML = html;
+      MathText.render(div.querySelector('.proj-tile-text'), c);
+      choicesEl.appendChild(div);
+    });
+  }
+
+  function resetLocalRoster() { localRoster = null; }
+
   /* ================= côté téléphone (émetteur) ================= */
   let phonePeer = null, phoneConn = null;
   let lastQuiz = null, lastState = null;
@@ -219,5 +276,5 @@ const Projection = (() => {
 
   function onLeavePC() { stopHost(); }
 
-  return { init, notifyFromScan, sendReveal, phoneDisconnect, onLeavePC };
+  return { init, notifyFromScan, sendReveal, phoneDisconnect, onLeavePC, renderLocal, resetLocalRoster };
 })();

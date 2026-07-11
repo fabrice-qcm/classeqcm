@@ -17,6 +17,8 @@ const Scan = (() => {
   let videoTrack = null;
 
   let wakeLock = null;           // verrou anti-veille pendant le scan
+  let localProj = false;         // projection locale active (même écran)
+  let localReveal = null;        // comptages de correction affichés localement
   let session = null;            // objet session courant (format d'échange v1)
   let quiz = null;               // questionnaire courant
   let qIndex = 0;                // index de la question courante
@@ -116,6 +118,7 @@ const Scan = (() => {
       flash[id] = Date.now();
       renderChips();
       updateCounter();
+      updateLocalProj();
       Projection.notifyFromScan(quiz, qIndex, det);
       await Storage.saveSession(session);
     }
@@ -162,6 +165,7 @@ const Scan = (() => {
   }
 
   async function endSession() {
+    if (localProj) closeLocalProj();
     stopCamera();
     Projection.phoneDisconnect();
     if (session) await Storage.saveSession(session);
@@ -310,8 +314,10 @@ const Scan = (() => {
       qIndex === quiz.questions.length - 1 ? 'Derni\u00e8re question' : 'Question suivante \u2192';
     document.getElementById('scan-q-next').disabled = qIndex === quiz.questions.length - 1;
     acc = {};
+    localReveal = null;
     renderChips();
     updateCounter();
+    updateLocalProj();
     Projection.notifyFromScan(quiz, qIndex, currentDetections());
   }
 
@@ -356,6 +362,7 @@ const Scan = (() => {
       btn.classList.toggle('hidden', i >= q.choix.length);
       btn.onclick = async () => {
         det[id] = btn.dataset.letter;
+        updateLocalProj();
         Projection.notifyFromScan(quiz, qIndex, det);
         await Storage.saveSession(session);
         modal.classList.add('hidden');
@@ -364,6 +371,7 @@ const Scan = (() => {
     });
     document.getElementById('scan-modal-clear').onclick = async () => {
       delete det[id];
+      updateLocalProj();
       Projection.notifyFromScan(quiz, qIndex, det);
       await Storage.saveSession(session);
       modal.classList.add('hidden');
@@ -435,6 +443,38 @@ const Scan = (() => {
     });
   }
 
+  /* ---------- projection locale (scan + affichage sur le même écran) ---------- */
+  function updateLocalProj() {
+    if (localProj && session) {
+      Projection.renderLocal(quiz, qIndex, currentDetections(), localReveal);
+    }
+  }
+
+  function revealCounts() {
+    const q = quiz.questions[qIndex];
+    const det = currentDetections();
+    const counts = {};
+    ['A', 'B', 'C', 'D'].slice(0, q.choix.length).forEach(l => counts[l] = 0);
+    Object.values(det).forEach(l => { if (counts[l] !== undefined) counts[l]++; });
+    return counts;
+  }
+
+  function openLocalProj() {
+    localProj = true;
+    Projection.resetLocalRoster();
+    const panel = document.getElementById('local-proj');
+    panel.classList.remove('hidden');
+    document.getElementById('lp-reveal').classList.toggle('hidden', !(session && session.optionReveal));
+    if (panel.requestFullscreen) panel.requestFullscreen().catch(() => {});
+    updateLocalProj();
+  }
+
+  function closeLocalProj() {
+    localProj = false;
+    document.getElementById('local-proj').classList.add('hidden');
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  }
+
   /* ---------- calibrage intégré ---------- */
   function calibrageQuiz() {
     const L = ['A', 'B', 'C', 'D'];
@@ -473,13 +513,26 @@ const Scan = (() => {
       if (session) { stopCamera(); startCamera(); }
     };
     document.getElementById('btn-scan-reveal').onclick = () => {
-      const q = quiz.questions[qIndex];
-      const det = currentDetections();
-      const counts = {};
-      ['A', 'B', 'C', 'D'].slice(0, q.choix.length).forEach(l => counts[l] = 0);
-      Object.values(det).forEach(l => { if (counts[l] !== undefined) counts[l]++; });
-      Projection.sendReveal(qIndex, counts);
+      Projection.sendReveal(qIndex, revealCounts());
     };
+    document.getElementById('btn-local-proj').onclick = openLocalProj;
+    document.getElementById('lp-close').onclick = closeLocalProj;
+    document.getElementById('lp-prev').onclick = () => { if (qIndex > 0) { qIndex--; renderQuestion(); } };
+    document.getElementById('lp-next').onclick = () => {
+      if (qIndex < quiz.questions.length - 1) { qIndex++; renderQuestion(); }
+    };
+    document.getElementById('lp-reveal').onclick = () => {
+      localReveal = revealCounts();
+      updateLocalProj();
+      Projection.sendReveal(qIndex, localReveal);
+    };
+    // Sortie du plein écran par Échap : refermer proprement le panneau local
+    document.addEventListener('fullscreenchange', () => {
+      if (!document.fullscreenElement && localProj) {
+        localProj = false;
+        document.getElementById('local-proj').classList.add('hidden');
+      }
+    });
   }
 
   /* Coupe la caméra si on quitte l'onglet Scan ou si l'app passe en arrière-plan. */

@@ -178,8 +178,27 @@
       <p class="hint">Balayez lentement la classe. Vert = réponse enregistrée.
         Touchez une pastille pour corriger ou saisir à la main (rattrapage).</p>
       <div id="scan-chips" class="chips"></div>
+      <button id="btn-local-proj" class="btn primary" style="margin-top:1rem">
+        Projeter sur cet écran</button>
       <button id="btn-end-session" class="btn danger" style="margin-top:1rem">
         Terminer la session</button>
+
+      <!-- Projection locale : même écran, la caméra continue en arrière-plan -->
+      <div id="local-proj" class="local-proj hidden">
+        <div class="local-proj-bar">
+          <button id="lp-prev" class="btn small ghost">&larr; Précédente</button>
+          <div class="local-proj-mid">
+            <span id="lp-q-num" class="proj-q-num"></span>
+            <span id="lp-counter" class="proj-counter"></span>
+          </div>
+          <button id="lp-reveal" class="btn small ghost hidden">Corriger</button>
+          <button id="lp-next" class="btn small primary">Suivante &rarr;</button>
+          <button id="lp-close" class="btn small danger" title="Fermer la projection">&times;</button>
+        </div>
+        <div id="lp-q-text" class="proj-q-text"></div>
+        <div id="lp-chips" class="proj-chip-grid"></div>
+        <div id="lp-choices"></div>
+      </div>
     </div>
 
     <!-- Saisie manuelle -->
