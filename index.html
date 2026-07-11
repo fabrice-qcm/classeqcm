@@ -40,6 +40,7 @@
     <div class="view-head">
       <h1>Questionnaires</h1>
       <div class="view-actions">
+        <button id="btn-import-quiz-url" class="btn ghost">Importer depuis un lien…</button>
         <button id="btn-import-quiz" class="btn ghost">Importer un fichier…</button>
         <button id="btn-new-quiz" class="btn primary">Nouveau questionnaire</button>
       </div>
@@ -64,11 +65,10 @@
       <span class="field-label">Titre du questionnaire</span>
       <input type="text" id="quiz-title" placeholder="Ex. : Fractions — évaluation 3" maxlength="120">
     </label>
-    <p class="hint"><b>Écritures mathématiques</b> : placez la formule entre deux symboles
-      dollar<br /><code>$\frac{3}{4}$</code> pour une fraction empilée
-      <br /><code>$5^2$</code> pour une puissance<br /><code>$\sqrt{16}$</code> pour une racine
-	  <br /><code>$3 \times 4$</code>signes × <br /><code>$12 \div 3$</code>signes ÷
-      <br />Un aperçu s'affiche sous le champ dès qu'un $ est saisi.</p>
+    <p class="hint">Écritures mathématiques : placez la formule entre deux symboles
+      dollar — <code>$\frac{3}{4}$</code> pour une fraction empilée,
+      <code>$5^2$</code> pour une puissance, <code>$\sqrt{16}$</code> pour une racine.
+      Un aperçu s'affiche sous le champ dès qu'un $ est saisi.</p>
     <div id="question-list"></div>
     <button id="btn-add-question" class="btn dashed">+ Ajouter une question</button>
     <p id="editor-status" class="status" role="status"></p>

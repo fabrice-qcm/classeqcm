@@ -1,7 +1,7 @@
 /* sw.js — met en cache toute l'application au premier chargement,
    puis sert tout depuis le cache : fonctionnement 100 % hors ligne. */
 
-const CACHE = 'classeqcm-v11'; // Incrémenter à chaque mise à jour de l'app.
+const CACHE = 'classeqcm-v12'; // Incrémenter à chaque mise à jour de l'app.
 
 const FILES = [
   './',

@@ -94,19 +94,22 @@ const Projection = (() => {
     const reveal = pcReveal && pcReveal.qIndex === pcState.qIndex ? pcReveal : null;
     const choicesEl = document.getElementById('proj-choices');
     choicesEl.innerHTML = '';
+    choicesEl.className = 'proj-tiles proj-tiles-' + q.choix.length;
     q.choix.forEach((c, i) => {
       const l = LETTERS[i];
       const isGood = reveal && l === q.bonneReponse;
       const div = document.createElement('div');
-      div.className = 'proj-choice' + (isGood ? ' proj-choice-correct' : '');
-      let html = '<span class="proj-letter">' + l + '</span><span class="proj-choice-text"></span>';
+      div.className = 'proj-tile proj-tile-' + i +
+        (reveal ? (isGood ? ' proj-tile-good' : ' proj-tile-dim') : '');
+      let html = '<span class="proj-tile-letter">' + l + '</span>' +
+        '<span class="proj-tile-text"></span>';
       if (reveal) {
         const n = reveal.counts[l] || 0;
-        html += '<span class="proj-choice-count">' + n + ' r\u00e9ponse' + (n > 1 ? 's' : '') +
+        html += '<span class="proj-tile-count">' + n + ' r\u00e9ponse' + (n > 1 ? 's' : '') +
           (isGood ? ' \u2713' : '') + '</span>';
       }
       div.innerHTML = html;
-      MathText.render(div.querySelector('.proj-choice-text'), c);
+      MathText.render(div.querySelector('.proj-tile-text'), c);
       choicesEl.appendChild(div);
     });
 

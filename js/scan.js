@@ -5,8 +5,8 @@
 
 const Scan = (() => {
 
-  const CONFIRM_FRAMES = 3;      // détections concordantes requises pour valider
-  const FRAME_INTERVAL = 90;     // ms mini entre deux analyses (~11 img/s max)
+  const CONFIRM_FRAMES = 2;      // détections concordantes requises pour valider
+  const FRAME_INTERVAL = 40;     // ms mini entre deux analyses (l'analyse elle-même impose son rythme)
   const HAMMING = 2;             // tolérance stricte = pas de faux ID (validé en test)
   const MAX_ID = 40;
 
@@ -71,8 +71,10 @@ const Scan = (() => {
     return { 0: 'A', 1: 'D', 2: 'C', 3: 'B' }[q];
   }
 
-  /* ---------- accumulateur anti-erreur ---------- */
-  function feed(markers) {
+  /* ---------- accumulateur anti-erreur ----------
+     Une carte proche (grande dans l'image) est lue sans ambiguïté : validation
+     immédiate. Une carte lointaine exige CONFIRM_FRAMES lectures concordantes. */
+  function feed(markers, frameWidth) {
     const locked = [];
     const seen = {};
     for (const m of markers) {
@@ -84,9 +86,13 @@ const Scan = (() => {
       if (a && a.answer === letter) {
         a.count++;
       } else {
-        acc[m.id] = { answer: letter, count: 1 };
+        acc[m.id] = { answer: letter, count: 1, sent: false };
       }
-      if (acc[m.id].count === CONFIRM_FRAMES) {
+      const side = Math.hypot(m.corners[1].x - m.corners[0].x, m.corners[1].y - m.corners[0].y);
+      const needed = (frameWidth && side > frameWidth * 0.16) ? 1 : CONFIRM_FRAMES;
+      const entry = acc[m.id];
+      if (!entry.sent && entry.count >= needed) {
+        entry.sent = true;
         locked.push({ id: m.id, answer: letter, corners: m.corners });
       }
     }
@@ -250,7 +256,7 @@ const Scan = (() => {
     let markers = [];
     try { markers = detector.detect(imageData); } catch (_) { /* image dégradée : on passe */ }
 
-    const locked = feed(markers);
+    const locked = feed(markers, canvas.width);
     locked.forEach(l => lockAnswer(l.id, l.answer));
     drawOverlay(overlay, markers);
   }

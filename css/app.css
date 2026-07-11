@@ -318,3 +318,41 @@ select { width: 100%; font: inherit; padding: 0.55rem 0.7rem;
 .choices > div + div { margin-top: 0.45rem; }
 .choices { gap: 0 !important; }
 code { background: #eef2f8; padding: 0.05rem 0.3rem; border-radius: 4px; font-size: 0.85em; }
+
+/* ---- projection : question en haut, tuiles colorées en bas ---- */
+.proj-screen { background: #fff; }
+#proj-display { display: flex; flex-direction: column; min-height: 70vh; gap: 1vw; }
+.proj-screen:fullscreen #proj-display { min-height: 94vh; }
+.proj-q-text { text-align: center; margin: 1vw 0; }
+.proj-chip-grid { justify-content: center; }
+.proj-tiles { display: grid; gap: 1vw; flex: 1; margin-top: auto; }
+.proj-tiles-2 { grid-template-columns: 1fr 1fr; }
+.proj-tiles-3 { grid-template-columns: repeat(3, 1fr); }
+.proj-tiles-4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+.proj-tile { position: relative; border-radius: 16px; color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  padding: 2.5vw 2vw; min-height: 18vh; text-align: center;
+  transition: opacity 0.3s; }
+.proj-tile-0 { background: #3b6fd4; }
+.proj-tile-1 { background: #17a398; }
+.proj-tile-2 { background: #e9a820; }
+.proj-tile-3 { background: #d95d7c; }
+.proj-tile-text { font-size: 2.6vw; font-weight: 800; }
+.proj-tile-text .katex { color: #fff; }
+.proj-tile-letter { position: absolute; top: 1vw; left: 1vw;
+  width: 3vw; height: 3vw; min-width: 1.8rem; min-height: 1.8rem;
+  border-radius: 50%; background: rgba(255,255,255,0.3);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 900; font-size: 1.5vw; }
+.proj-tile-dim { opacity: 0.3; }
+.proj-tile-good { outline: 0.5vw solid #1c7c4a; outline-offset: 0.3vw; }
+.proj-tile-count { position: absolute; bottom: 1vw; right: 1vw;
+  background: rgba(255,255,255,0.92); color: #22252b;
+  border-radius: 999px; padding: 0.3vw 1vw; font-weight: 800; font-size: 1.4vw; }
+.proj-tile-good .proj-tile-count { color: #1c7c4a; }
+@media (max-width: 900px) {
+  .proj-tile-text { font-size: 1.1rem; }
+  .proj-tile-letter { font-size: 0.95rem; }
+  .proj-tile-count { font-size: 0.85rem; padding: 0.15rem 0.6rem; }
+  .proj-tiles-3, .proj-tiles-4 { grid-template-columns: 1fr 1fr; grid-template-rows: none; }
+}

@@ -212,19 +212,51 @@ const Editor = (() => {
       JSON.stringify(quiz, null, 2), 'application/json');
   }
 
+  async function importQuizText(text) {
+    let obj;
+    if (text.replace(/^\uFEFF/, '').trimStart().startsWith('{')) {
+      obj = IO.validateQuiz(JSON.parse(text));
+      obj.id = obj.id || ('quiz-' + Date.now().toString(36));
+      obj.modifie = new Date().toISOString();
+    } else {
+      obj = IO.validateQuiz(IO.csvToQuiz(IO.parseCSV(text)));
+    }
+    await Storage.saveQuiz(obj);
+    renderList();
+    return obj;
+  }
+
+  /* Liens Google Drive : transformer le lien de partage en lien de téléchargement. */
+  function normalizeURL(url) {
+    const drive = url.match(/drive\.google\.com\/file\/d\/([\w-]+)/);
+    if (drive) return 'https://drive.google.com/uc?export=download&id=' + drive[1];
+    const open = url.match(/drive\.google\.com\/open\?id=([\w-]+)/);
+    if (open) return 'https://drive.google.com/uc?export=download&id=' + open[1];
+    return url;
+  }
+
+  async function importQuizURL() {
+    const url = prompt('Adresse du fichier de questionnaire (JSON ou CSV) :');
+    if (!url) return;
+    try {
+      const resp = await fetch(normalizeURL(url.trim()));
+      if (!resp.ok) throw new Error('r\u00e9ponse ' + resp.status);
+      const obj = await importQuizText(await resp.text());
+      alert('Questionnaire \u00ab ' + obj.titre + ' \u00bb import\u00e9.');
+    } catch (err) {
+      alert('Import impossible depuis ce lien.\n\n' +
+        'Cause probable : l\u2019h\u00e9bergeur (Google Drive notamment) interdit la lecture ' +
+        'directe par une autre page web (blocage CORS), ou pas de connexion internet.\n\n' +
+        'Solutions : t\u00e9l\u00e9chargez le fichier puis \u00ab Importer un fichier\u2026 \u00bb, ' +
+        'utilisez un lien de partage ClasseQCM (bouton Partager), ' +
+        'ou h\u00e9bergez le fichier sur GitHub.\n\nD\u00e9tail : ' + err.message);
+    }
+  }
+
   async function importQuizFile(file) {
     try {
       const text = await IO.readFileSmart(file);
-      let obj;
-      if (text.replace(/^\uFEFF/, '').trimStart().startsWith('{')) {
-        obj = IO.validateQuiz(JSON.parse(text));       // fichier JSON exporté par l'app
-        obj.id = obj.id || ('quiz-' + Date.now().toString(36));
-        obj.modifie = new Date().toISOString();
-      } else {
-        obj = IO.validateQuiz(IO.csvToQuiz(IO.parseCSV(text)));  // fichier CSV (Excel)
-      }
-      await Storage.saveQuiz(obj);
-      renderList();
+      await importQuizText(text);
     } catch (e) {
       alert('Import impossible : ' + e.message);
     }
@@ -251,6 +283,7 @@ const Editor = (() => {
     };
     const fileInput = document.getElementById('file-import-quiz');
     document.getElementById('btn-import-quiz').onclick = () => fileInput.click();
+    document.getElementById('btn-import-quiz-url').onclick = importQuizURL;
     fileInput.onchange = () => {
       if (fileInput.files[0]) importQuizFile(fileInput.files[0]);
       fileInput.value = '';
