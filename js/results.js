@@ -280,41 +280,85 @@ const Results = (() => {
     IO.download('resultats-' + IO.slug(data.quiz.titre) + '.txt', L.join('\r\n'), 'text/plain;charset=utf-8');
   }
 
-  /* ---------- export Excel multi-feuilles ---------- */
+  /* ---------- export Excel multi-feuilles (présentation type Quizizz) ---------- */
+  const XL_HEAD = { font: { bold: true, color: { rgb: 'FFFFFF' } },
+    fill: { patternType: 'solid', fgColor: { rgb: '1B3A6B' } },
+    alignment: { wrapText: true, vertical: 'center' } };
+  const XL_GREEN = { fill: { patternType: 'solid', fgColor: { rgb: 'C6EFCE' } },
+    font: { color: { rgb: '006100' } } };
+  const XL_RED = { fill: { patternType: 'solid', fgColor: { rgb: 'FFC7CE' } },
+    font: { color: { rgb: '9C0006' } } };
+  const XL_GRAY = { fill: { patternType: 'solid', fgColor: { rgb: 'F2F2F2' } },
+    font: { color: { rgb: '808080' } } };
+
+  function styleRow(ws, rowIdx, colCount, style) {
+    for (let c = 0; c < colCount; c++) {
+      const cell = ws[XLSX.utils.encode_cell({ r: rowIdx, c: c })];
+      if (cell) cell.s = style;
+    }
+  }
+
   function exportXLSX() {
     if (!data) return;
     const nq = data.quiz.questions.length;
     const P = t => MathText.plain(t);
     const wb = XLSX.utils.book_new();
+    const answerText = (q, letter) => {
+      const idx = LETTERS.indexOf(letter);
+      return (idx >= 0 && q.choix[idx]) ? P(q.choix[idx]) : letter;
+    };
 
-    // Feuille 1 : Résumé (matrice élèves x questions, lettres répondues)
-    const resume = [];
-    resume.push(['N\u00b0', 'Nom', 'Pr\u00e9nom',
-      ...data.quiz.questions.map((_, i) => 'Q' + (i + 1)), 'Justes', 'Total', 'Pr\u00e9cision']);
-    resume.push(['', '', '\u00c9nonc\u00e9 \u2192',
-      ...data.quiz.questions.map(q => P(q.texte)), '', '', '']);
-    data.students.forEach(s => {
-      resume.push([s.id, s.nom, s.prenom,
-        ...s.answers.map(a => a.letter === null ? '' : a.letter),
-        s.correct, nq, s.pct / 100]);
+    /* ===== Feuille 1 : Résumé — questions en lignes, un élève par colonne ===== */
+    const head = ['#', 'Question', 'Bonne réponse', 'Précision', 'Justes', 'Faux', 'Sans réponse',
+      ...data.students.map(s => (s.label + ' (n\u00b0 ' + s.id + ')'))];
+    const resume = [head];
+    data.perQuestion.forEach((pq, qi) => {
+      resume.push([pq.q.num, P(pq.q.texte), answerText(pq.q, pq.q.bonneReponse),
+        pq.pct === null ? '' : pq.pct / 100,
+        pq.correct, pq.answered - pq.correct, pq.none,
+        ...data.students.map(s => {
+          const a = s.answers[qi];
+          return a.letter === null ? '' : answerText(pq.q, a.letter);
+        })]);
     });
-    resume.push(['', '', 'R\u00e9ussite par question \u2192',
-      ...data.perQuestion.map(pq => pq.pct === null ? '' : pq.pct / 100), '', '', '']);
     const wsResume = XLSX.utils.aoa_to_sheet(resume);
-    wsResume['!cols'] = [{ wch: 4 }, { wch: 16 }, { wch: 14 },
-      ...data.quiz.questions.map(() => ({ wch: 6 })), { wch: 7 }, { wch: 6 }, { wch: 10 }];
-    // Format pourcentage sur la colonne Précision et la ligne de réussite
-    for (let i = 0; i < data.students.length; i++) {
-      const cell = wsResume[XLSX.utils.encode_cell({ r: 2 + i, c: 3 + nq + 2 })];
-      if (cell) cell.z = '0%';
-    }
-    for (let qi = 0; qi < nq; qi++) {
-      const cell = wsResume[XLSX.utils.encode_cell({ r: 2 + data.students.length, c: 3 + qi })];
-      if (cell) cell.z = '0%';
-    }
+    wsResume['!cols'] = [{ wch: 4 }, { wch: 45 }, { wch: 18 }, { wch: 9 }, { wch: 7 },
+      { wch: 7 }, { wch: 12 }, ...data.students.map(() => ({ wch: 15 }))];
+    styleRow(wsResume, 0, head.length, XL_HEAD);
+    data.perQuestion.forEach((pq, qi) => {
+      const rw = 1 + qi;
+      const pcell = wsResume[XLSX.utils.encode_cell({ r: rw, c: 3 })];
+      if (pcell) pcell.z = '0%';
+      data.students.forEach((s, si) => {
+        const cell = wsResume[XLSX.utils.encode_cell({ r: rw, c: 7 + si })];
+        if (!cell) return;
+        const a = s.answers[qi];
+        cell.s = a.letter === null ? XL_GRAY : (a.ok ? XL_GREEN : XL_RED);
+      });
+    });
     XLSX.utils.book_append_sheet(wb, wsResume, 'R\u00e9sum\u00e9');
 
-    // Feuille 2 : Détail réponses (une ligne par élève et par question)
+    /* ===== Feuille 2 : Participants — classés par réussite ===== */
+    const ranked = [...data.students].sort((a, b) =>
+      (b.pct - a.pct) || (b.correct - a.correct) || (a.id - b.id));
+    const partHead = ['Rang', 'Pr\u00e9nom', 'Nom', 'N\u00b0 carte', 'Niveau',
+      'Questions', 'Pr\u00e9cision', 'Justes', 'Faux', 'Sans r\u00e9ponse'];
+    const part = [partHead];
+    ranked.forEach((s, i) => {
+      part.push([i + 1, s.prenom, s.nom, s.id, s.niveau || '', nq, s.pct / 100,
+        s.correct, s.answered - s.correct, nq - s.answered]);
+    });
+    const wsPart = XLSX.utils.aoa_to_sheet(part);
+    wsPart['!cols'] = [{ wch: 5 }, { wch: 14 }, { wch: 16 }, { wch: 8 }, { wch: 8 },
+      { wch: 9 }, { wch: 10 }, { wch: 7 }, { wch: 7 }, { wch: 12 }];
+    styleRow(wsPart, 0, partHead.length, XL_HEAD);
+    ranked.forEach((s, i) => {
+      const cell = wsPart[XLSX.utils.encode_cell({ r: 1 + i, c: 6 })];
+      if (cell) cell.z = '0%';
+    });
+    XLSX.utils.book_append_sheet(wb, wsPart, 'Participants');
+
+    /* ===== Feuille 3 : Détail réponses (format long, une ligne par élève x question) ===== */
     const detail = [['N\u00b0 \u00e9l\u00e8ve', 'Nom', 'Pr\u00e9nom', 'N\u00b0 question',
       '\u00c9nonc\u00e9', 'R\u00e9ponse', 'Texte de la r\u00e9ponse',
       'Bonne r\u00e9ponse', 'Texte de la bonne r\u00e9ponse', 'Juste']];
@@ -331,57 +375,22 @@ const Results = (() => {
     });
     const wsDetail = XLSX.utils.aoa_to_sheet(detail);
     wsDetail['!cols'] = [{ wch: 8 }, { wch: 16 }, { wch: 14 }, { wch: 10 }, { wch: 45 },
-      { wch: 12 }, { wch: 30 }, { wch: 12 }, { wch: 30 }, { wch: 7 }];
+      { wch: 12 }, { wch: 26 }, { wch: 12 }, { wch: 26 }, { wch: 7 }];
+    styleRow(wsDetail, 0, 10, XL_HEAD);
     XLSX.utils.book_append_sheet(wb, wsDetail, 'D\u00e9tail r\u00e9ponses');
 
-    // Feuille 3 : Questions (statistiques et répartition)
-    const ques = [['N\u00b0', '\u00c9nonc\u00e9', 'Choix A', 'Choix B', 'Choix C', 'Choix D',
-      'Bonne r\u00e9ponse', 'R\u00e9p. A', 'R\u00e9p. B', 'R\u00e9p. C', 'R\u00e9p. D',
-      'Sans r\u00e9ponse', 'Hors choix', 'Justes', 'R\u00e9pondants', 'Pr\u00e9cision']];
-    data.perQuestion.forEach(pq => {
-      ques.push([pq.q.num, P(pq.q.texte),
-        ...[0, 1, 2, 3].map(i => pq.q.choix[i] ? P(pq.q.choix[i]) : ''),
-        pq.q.bonneReponse,
-        ...LETTERS.map(l => pq.counts[l] !== undefined ? pq.counts[l] : ''),
-        pq.none, pq.invalid, pq.correct, pq.answered,
-        pq.pct === null ? '' : pq.pct / 100]);
-    });
-    const wsQues = XLSX.utils.aoa_to_sheet(ques);
-    wsQues['!cols'] = [{ wch: 4 }, { wch: 45 }, { wch: 20 }, { wch: 20 }, { wch: 20 }, { wch: 20 },
-      { wch: 8 }, { wch: 7 }, { wch: 7 }, { wch: 7 }, { wch: 7 }, { wch: 9 }, { wch: 9 },
-      { wch: 7 }, { wch: 11 }, { wch: 10 }];
-    for (let i = 0; i < data.perQuestion.length; i++) {
-      const cell = wsQues[XLSX.utils.encode_cell({ r: 1 + i, c: 15 })];
-      if (cell) cell.z = '0%';
-    }
-    XLSX.utils.book_append_sheet(wb, wsQues, 'Questions');
-
-    // Feuille 4 : Participants
-    const part = [['N\u00b0', 'Nom', 'Pr\u00e9nom', 'Niveau', 'R\u00e9pondues', 'Justes',
-      'Total questions', 'Pr\u00e9cision']];
-    data.students.forEach(s => {
-      part.push([s.id, s.nom, s.prenom, s.niveau || '', s.answered, s.correct, nq, s.pct / 100]);
-    });
-    const wsPart = XLSX.utils.aoa_to_sheet(part);
-    wsPart['!cols'] = [{ wch: 4 }, { wch: 16 }, { wch: 14 }, { wch: 8 }, { wch: 10 },
-      { wch: 7 }, { wch: 14 }, { wch: 10 }];
-    for (let i = 0; i < data.students.length; i++) {
-      const cell = wsPart[XLSX.utils.encode_cell({ r: 1 + i, c: 7 })];
-      if (cell) cell.z = '0%';
-    }
-    XLSX.utils.book_append_sheet(wb, wsPart, 'Participants');
-
-    // Feuille 5 : Infos de session
+    /* ===== Feuille 4 : Infos (sans donn\u00e9es temporelles) ===== */
     const infos = [
       ['Questionnaire', P(data.quiz.titre)],
-      ['Date de la session', new Date(data.session.date).toLocaleString('fr-FR')],
       ['Participants', data.students.length],
       ['Questions', nq],
-      ['Export g\u00e9n\u00e9r\u00e9 le', new Date().toLocaleString('fr-FR')],
+      ['Pr\u00e9cision de classe', Math.round(data.students.reduce((a, s) => a + s.pct, 0) /
+        Math.max(1, data.students.length)) / 100],
       ['Note', 'Pr\u00e9cision = justes / total des questions (une non-r\u00e9ponse compte fausse).']
     ];
     const wsInfos = XLSX.utils.aoa_to_sheet(infos);
     wsInfos['!cols'] = [{ wch: 22 }, { wch: 60 }];
+    const pc = wsInfos['B4']; if (pc) pc.z = '0%';
     XLSX.utils.book_append_sheet(wb, wsInfos, 'Infos');
 
     XLSX.writeFile(wb, 'resultats-' + IO.slug(data.quiz.titre) + '.xlsx');

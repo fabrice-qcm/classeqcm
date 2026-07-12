@@ -310,9 +310,12 @@ const Scan = (() => {
       'Question ' + q.num + ' / ' + quiz.questions.length;
     MathText.render(document.getElementById('scan-q-text'), q.texte);
     document.getElementById('scan-q-prev').disabled = qIndex === 0;
-    document.getElementById('scan-q-next').textContent =
-      qIndex === quiz.questions.length - 1 ? 'Derni\u00e8re question' : 'Question suivante \u2192';
-    document.getElementById('scan-q-next').disabled = qIndex === quiz.questions.length - 1;
+    const last = qIndex === quiz.questions.length - 1;
+    const nextBtn = document.getElementById('scan-q-next');
+    nextBtn.textContent = last ? 'Terminer la session' : 'Question suivante \u2192';
+    nextBtn.disabled = false;
+    nextBtn.classList.toggle('primary', !last);
+    nextBtn.classList.toggle('danger', last);
     acc = {};
     localReveal = null;
     renderChips();
@@ -508,7 +511,10 @@ const Scan = (() => {
       if (confirm('Terminer la session ? Elle restera enregistr\u00e9e et exportable.')) endSession();
     };
     document.getElementById('scan-q-prev').onclick = () => { qIndex--; renderQuestion(); };
-    document.getElementById('scan-q-next').onclick = () => { qIndex++; renderQuestion(); };
+    document.getElementById('scan-q-next').onclick = () => {
+      if (qIndex < quiz.questions.length - 1) { qIndex++; renderQuestion(); }
+      else if (confirm('Derni\u00e8re question atteinte : terminer la session ? Elle restera enregistr\u00e9e et exportable.')) endSession();
+    };
     document.getElementById('btn-restart-cam').onclick = () => {
       if (session) { stopCamera(); startCamera(); }
     };
@@ -520,6 +526,7 @@ const Scan = (() => {
     document.getElementById('lp-prev').onclick = () => { if (qIndex > 0) { qIndex--; renderQuestion(); } };
     document.getElementById('lp-next').onclick = () => {
       if (qIndex < quiz.questions.length - 1) { qIndex++; renderQuestion(); }
+      else if (confirm('Derni\u00e8re question atteinte : terminer la session ? Elle restera enregistr\u00e9e et exportable.')) endSession();
     };
     document.getElementById('lp-reveal').onclick = () => {
       localReveal = revealCounts();

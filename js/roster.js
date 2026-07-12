@@ -123,6 +123,12 @@ const Roster = (() => {
   }
 
   function init() {
+    document.getElementById('btn-reset-roster').onclick = async () => {
+      if (!confirm('Effacer toute la classe (les 40 lignes) ? Pensez \u00e0 exporter le CSV avant si vous voulez la conserver.')) return;
+      await Storage.saveRoster(Array.from({ length: 40 }, () => ({ nom: '', prenom: '', niveau: '' })));
+      await render();
+      setStatus('Classe r\u00e9initialis\u00e9e.');
+    };
     document.getElementById('btn-save-roster').onclick = save;
     document.getElementById('btn-share-roster').onclick = async () => {
       const roster = await save();

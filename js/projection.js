@@ -151,7 +151,12 @@ const Projection = (() => {
       'Question ' + q.num + ' / ' + quiz.questions.length;
     MathText.render(document.getElementById('lp-q-text'), q.texte);
     document.getElementById('lp-prev').disabled = qIndex === 0;
-    document.getElementById('lp-next').disabled = qIndex === quiz.questions.length - 1;
+    const lpLast = qIndex === quiz.questions.length - 1;
+    const lpNext = document.getElementById('lp-next');
+    lpNext.textContent = lpLast ? 'Terminer la session' : 'Suivante \u2192';
+    lpNext.disabled = false;
+    lpNext.classList.toggle('primary', !lpLast);
+    lpNext.classList.toggle('danger', lpLast);
 
     // Élèves gris/bleu + compteur
     const answered = new Set(Object.keys(detections).map(Number));

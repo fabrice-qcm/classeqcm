@@ -1,7 +1,7 @@
 /* sw.js — met en cache toute l'application au premier chargement,
    puis sert tout depuis le cache : fonctionnement 100 % hors ligne. */
 
-const CACHE = 'classeqcm-v14'; // Incrémenter à chaque mise à jour de l'app.
+const CACHE = 'classeqcm-v15'; // Incrémenter à chaque mise à jour de l'app.
 
 const FILES = [
   './',
@@ -19,7 +19,7 @@ const FILES = [
   './js/projection.js',
   './js/results.js',
   './lib/peerjs.min.js',
-  './lib/xlsx.full.min.js',
+  './lib/xlsx-style.min.js',
   './js/mathtext.js',
   './lib/katex/katex.min.js',
   './lib/katex/katex.min.css',
