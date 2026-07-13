@@ -56,7 +56,16 @@ const Scan = (() => {
       else if (x < -5) lastPhysicalQ = 3;  // tourné horaire
       return lastPhysicalQ;
     }
-    // Repli sans capteur : angle de l'interface (moins fiable)
+    // Repli sans capteur : on suppose le flux aligné sur l'interface (correction nulle)
+    return screenQ();
+  }
+
+  /* Rotation de l'interface (quart de tour). Chrome fait pivoter le flux caméra
+     pour suivre l'interface quand la rotation auto est active ; quand elle est
+     verrouillée, l'interface reste à 0 et le flux ne tourne pas. Dans les deux
+     cas : rotation apparente du monde dans l'image = physique - interface.
+     Correction : q = mesure - physique + interface. */
+  function screenQ() {
     let a = 0;
     try {
       if (screen.orientation && typeof screen.orientation.angle === 'number') a = screen.orientation.angle;
@@ -69,7 +78,7 @@ const Scan = (() => {
     const c = marker.corners;
     const angle = Math.atan2(c[1].y - c[0].y, c[1].x - c[0].x) * 180 / Math.PI;
     const rawQ = Math.round(angle / 90);
-    const q = (((rawQ - physicalQ()) % 4) + 4) % 4;
+    const q = (((rawQ - physicalQ() + screenQ()) % 4) + 4) % 4;
     return { 0: 'A', 1: 'D', 2: 'C', 3: 'B' }[q];
   }
 
@@ -126,9 +135,7 @@ const Scan = (() => {
 
   async function startSession(quizObj) {
     quiz = quizObj;
-    const optionReveal = document.getElementById('scan-option-reveal').checked;
     session = {
-      optionReveal: optionReveal,
       type: 'session', version: 1,
       id: 'session-' + Date.now().toString(36),
       quizId: quiz.id, quizTitre: quiz.titre,
@@ -141,7 +148,6 @@ const Scan = (() => {
     await Storage.saveSession(session);
     document.getElementById('scan-setup').classList.add('hidden');
     document.getElementById('scan-live').classList.remove('hidden');
-    document.getElementById('btn-scan-reveal').classList.toggle('hidden', !optionReveal);
     renderQuestion();
     await startCamera();
   }
@@ -159,7 +165,6 @@ const Scan = (() => {
     acc = {}; flash = {};
     document.getElementById('scan-setup').classList.add('hidden');
     document.getElementById('scan-live').classList.remove('hidden');
-    document.getElementById('btn-scan-reveal').classList.toggle('hidden', !s.optionReveal);
     renderQuestion();
     await startCamera();
   }
@@ -327,6 +332,7 @@ const Scan = (() => {
   async function renderChips() {
     const grid = document.getElementById('scan-chips');
     const det = currentDetections();
+    const bonne = quiz ? quiz.questions[qIndex].bonneReponse : null;
     const roster = await Storage.getRoster();
     grid.innerHTML = '';
     for (let id = 1; id <= MAX_ID; id++) {
@@ -335,7 +341,7 @@ const Scan = (() => {
       // Sans liste de classe importée sur cet appareil, on affiche les 40.
       if (!inClass && roster.some(r => r.nom || r.prenom)) continue;
       const chip = document.createElement('button');
-      chip.className = 'chip' + (det[id] ? ' chip-ok' : '');
+      chip.className = 'chip' + (det[id] ? (det[id] === bonne ? ' chip-ok' : ' chip-bad') : '');
       if (flash[id] && Date.now() - flash[id] < 1500) chip.classList.add('chip-flash');
       chip.innerHTML = '<span class="chip-num">' + id + '</span>' +
         (det[id] ? '<span class="chip-ans">' + det[id] + '</span>' : '');
@@ -467,7 +473,6 @@ const Scan = (() => {
     Projection.resetLocalRoster();
     const panel = document.getElementById('local-proj');
     panel.classList.remove('hidden');
-    document.getElementById('lp-reveal').classList.toggle('hidden', !(session && session.optionReveal));
     if (panel.requestFullscreen) panel.requestFullscreen().catch(() => {});
     updateLocalProj();
   }

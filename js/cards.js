@@ -104,6 +104,58 @@ const Cards = (() => {
     pdf.save('cartes-reponses.pdf');
   }
 
+  /* ---------- flashcards A7 (8 par feuille A4, recto questions / verso réponses) ----
+     Les colonnes du verso sont inversées pour un alignement correct en impression
+     recto-verso avec retournement sur les bords longs. ---- */
+  function flashcardsPDF(quiz) {
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+    const CW = 105, CH = 74.25, COLS = 2, ROWS = 4, PER = COLS * ROWS;
+    const P = t => (typeof MathText !== 'undefined') ? MathText.plain(t) : t;
+    const pages = Math.ceil(quiz.questions.length / PER);
+
+    function cutLines() {
+      pdf.setDrawColor(190, 190, 190);
+      pdf.setLineDashPattern([2, 2], 0);
+      pdf.line(CW, 0, CW, 297);
+      for (let rw = 1; rw < ROWS; rw++) pdf.line(0, rw * CH, 210, rw * CH);
+      pdf.setLineDashPattern([], 0);
+    }
+
+    function cell(q, col, row, isAnswer) {
+      const x = col * CW, y = row * CH;
+      pdf.setTextColor(150, 150, 150);
+      pdf.setFontSize(8);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text((isAnswer ? 'R\u00e9ponse ' : 'Question ') + q.num, x + 5, y + 7);
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFont('helvetica', isAnswer ? 'bold' : 'normal');
+      const body = isAnswer
+        ? P(q.choix['ABCD'.indexOf(q.bonneReponse)] || q.bonneReponse)
+        : P(q.texte);
+      let size = isAnswer ? 16 : 12;
+      pdf.setFontSize(size);
+      let lines = pdf.splitTextToSize(body, CW - 16);
+      while (lines.length * size * 0.45 > CH - 22 && size > 8) {
+        size -= 1; pdf.setFontSize(size);
+        lines = pdf.splitTextToSize(body, CW - 16);
+      }
+      pdf.text(lines, x + CW / 2, y + CH / 2 - (lines.length - 1) * size * 0.2, { align: 'center' });
+    }
+
+    for (let pg = 0; pg < pages; pg++) {
+      const slice = quiz.questions.slice(pg * PER, pg * PER + PER);
+      if (pg > 0) pdf.addPage();
+      cutLines();
+      slice.forEach((q, i) => cell(q, i % COLS, Math.floor(i / COLS), false));
+      pdf.addPage();
+      cutLines();
+      // Verso : colonnes inversées pour l'impression recto-verso (bords longs)
+      slice.forEach((q, i) => cell(q, (COLS - 1) - (i % COLS), Math.floor(i / COLS), true));
+    }
+    pdf.save('flashcards-' + IO.slug(quiz.titre) + '.pdf');
+  }
+
   function init() {
     document.getElementById('btn-generate-cards').onclick = async () => {
       const btn = document.getElementById('btn-generate-cards');
@@ -124,5 +176,5 @@ const Cards = (() => {
     };
   }
 
-  return { init, drawMarker };
+  return { init, drawMarker, flashcardsPDF };
 })();

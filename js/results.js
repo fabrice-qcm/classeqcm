@@ -415,6 +415,32 @@ const Results = (() => {
     const fi = document.getElementById('file-import-session');
     document.getElementById('btn-import-session').onclick = () => fi.click();
     fi.onchange = () => { if (fi.files[0]) importSessionFile(fi.files[0]); fi.value = ''; };
+    document.getElementById('btn-groupe-besoin').onclick = () => {
+      if (!data) return;
+      const groupe = data.students.filter(s => s.pct <= 50)
+        .sort((a, b) => (a.pct - b.pct) || (a.id - b.id));
+      const panel = document.getElementById('results-besoin');
+      const list = document.getElementById('besoin-list');
+      list.innerHTML = '';
+      if (groupe.length === 0) {
+        list.textContent = 'Aucun \u00e9l\u00e8ve \u00e0 50 % ou moins sur cette session.';
+      } else {
+        groupe.forEach(s => {
+          const row = document.createElement('div');
+          row.className = 'besoin-row';
+          row.textContent = s.label + ' (carte ' + s.id + ') \u2014 ' + s.pct + ' % (' +
+            s.correct + '/' + data.quiz.questions.length + ')';
+          list.appendChild(row);
+        });
+      }
+      panel.classList.remove('hidden');
+      document.getElementById('besoin-copy').onclick = async () => {
+        const txt = 'Groupe de besoin \u2014 ' + MathText.plain(data.quiz.titre) + '\n' +
+          groupe.map(s => s.label + ' (carte ' + s.id + ') : ' + s.pct + ' %').join('\n');
+        try { await navigator.clipboard.writeText(txt); } catch (_) {}
+      };
+      document.getElementById('besoin-close').onclick = () => panel.classList.add('hidden');
+    };
     document.getElementById('btn-export-results-xlsx').onclick = exportXLSX;
     document.getElementById('btn-export-results-csv').onclick = exportCSV;
     document.getElementById('btn-export-results-txt').onclick = exportTXT;

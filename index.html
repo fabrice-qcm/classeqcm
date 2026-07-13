@@ -132,12 +132,6 @@
         <span class="field-label">Questionnaire à faire passer</span>
         <select id="scan-quiz-select"></select>
       </label>
-      <label class="check-row">
-        <input type="checkbox" id="scan-option-reveal">
-        <span>Activer le bouton « Corriger » : affiche la bonne réponse et la
-        répartition des réponses sur le vidéoprojecteur avant de passer à la
-        question suivante</span>
-      </label>
       <div class="view-actions">
         <button id="btn-calibrage" class="btn ghost">Calibrage (A, B, C, D)</button>
         <button id="btn-start-session" class="btn primary">Démarrer la session</button>
@@ -154,7 +148,7 @@
           <div id="scan-q-num" class="scan-q-num"></div>
           <div id="scan-q-text" class="scan-q-text"></div>
         </div>
-        <button id="btn-scan-reveal" class="btn small ghost hidden">Corriger</button>
+        <button id="btn-scan-reveal" class="btn small ghost">Corriger</button>
         <button id="scan-q-next" class="btn small primary">Suivante &rarr;</button>
       </div>
       <div class="scan-video-wrap">
@@ -192,7 +186,7 @@
             <span id="lp-q-num" class="proj-q-num"></span>
             <span id="lp-counter" class="proj-counter"></span>
           </div>
-          <button id="lp-reveal" class="btn small ghost hidden">Corriger</button>
+          <button id="lp-reveal" class="btn small ghost">Corriger</button>
           <button id="lp-next" class="btn small primary">Suivante &rarr;</button>
           <button id="lp-close" class="btn small danger" title="Fermer la projection">&times;</button>
         </div>
@@ -257,6 +251,7 @@
     <div class="view-head">
       <h1>Résultats</h1>
       <div class="view-actions">
+        <button id="btn-groupe-besoin" class="btn ghost">Créer groupe de besoin</button>
         <button id="btn-import-session" class="btn ghost">Importer des résultats…</button>
         <button id="btn-export-results-xlsx" class="btn primary">Exporter Excel</button>
         <button id="btn-export-results-csv" class="btn ghost">Exporter CSV</button>
@@ -273,6 +268,16 @@
     </p>
     <p id="results-error" class="status error hidden"></p>
     <div id="results-body" class="hidden">
+      <div id="results-besoin" class="besoin-panel hidden">
+        <div class="besoin-head">
+          <strong>Groupe de besoin (50 % ou moins)</strong>
+          <div>
+            <button id="besoin-copy" class="btn small ghost">Copier la liste</button>
+            <button id="besoin-close" class="btn small ghost">Fermer</button>
+          </div>
+        </div>
+        <div id="besoin-list"></div>
+      </div>
       <nav class="subtabs">
         <button class="subtab active" data-sub="summary">Résumé</button>
         <button class="subtab" data-sub="students">Participants</button>
