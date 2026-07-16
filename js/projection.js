@@ -42,7 +42,7 @@ const Projection = (() => {
   async function startHost() {
     stopHost();
     const code = randomCode();
-    setHostStatus('Connexion au service d\u2019annuaire\u2026');
+    setHostStatus(I18n.t('proj.status.directory'));
     document.getElementById('proj-code').textContent = code;
     renderHostQR(code);
     try {
@@ -247,8 +247,7 @@ const Projection = (() => {
       phoneConn.on('error', () => onStatus('Erreur de connexion.', true));
     });
     phonePeer.on('error', e => {
-      onStatus('En attente que la projection soit ouverte sur l\u2019ordinateur\u2026 ' +
-        'Internet requis (wifi ou 4G/5G)', true);
+      onStatus(I18n.t('proj.status.waiting'), true);
     });
   }
 
@@ -305,8 +304,8 @@ const Projection = (() => {
         document.getElementById('scan-projector-code').value = code;
         phoneConnect(code, setStatus);
       });
-      if (ok) setStatus('Visez le QR affich\u00e9 sur l\u2019ordinateur\u2026');
-      else setStatus('D\u00e9marrez d\u2019abord une session de scan.', true);
+      if (ok) setStatus(I18n.t('scan.status.qrAim'));
+      else setStatus(I18n.t('scan.status.qrNoSession'), true);
     };
   }
 

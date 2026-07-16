@@ -53,6 +53,7 @@ const Results = (() => {
       return {
         q: q, counts: counts, invalid: invalid, none: none,
         answered: answered, correct: correct,
+        // Non-réponse comptée fausse : dénominateur = tous les élèves, pas seulement les répondants.
         pct: students.length ? Math.round(100 * correct / students.length) : null
       };
     });
@@ -67,7 +68,7 @@ const Results = (() => {
     sessions.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
     select.innerHTML = '';
     if (sessions.length === 0) {
-      select.innerHTML = '<option value="">Aucune session \u2014 importez un fichier de r\u00e9sultats</option>';
+      select.innerHTML = '<option value="">' + I18n.t('results.noSession') + '</option>';
       document.getElementById('results-body').classList.add('hidden');
       document.getElementById('results-empty').classList.remove('hidden');
       return;
@@ -461,7 +462,7 @@ const Results = (() => {
       await Storage.saveSession(obj);
       render(obj.id);
     } catch (e) {
-      alert('Import impossible : ' + e.message);
+      alert(I18n.t('results.importError', { msg: e.message }));
     }
   }
 
@@ -479,7 +480,7 @@ const Results = (() => {
       const list = document.getElementById('besoin-list');
       list.innerHTML = '';
       if (groupe.length === 0) {
-        list.textContent = 'Aucun \u00e9l\u00e8ve \u00e0 50 % ou moins sur cette session.';
+        list.textContent = I18n.t('results.noGroup');
       } else {
         groupe.forEach(s => {
           const row = document.createElement('div');

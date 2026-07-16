@@ -24,35 +24,43 @@
     </svg>
     <span class="brand-name">ClasseQCM</span>
   </div>
-  <nav class="rail-nav" role="tablist" aria-label="Navigation principale">
-    <span class="rail-group">Préparer</span>
+  <nav class="rail-nav" role="tablist" data-i18n-aria-label="nav.aria">
+    <span class="rail-group" data-i18n="nav.group.prepare">Préparer</span>
     <button class="tab" data-view="quizzes" role="tab">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 9h8M8 13h8M8 17h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-      <span>Questionnaires</span>
+      <span data-i18n="nav.quizzes">Questionnaires</span>
     </button>
     <button class="tab" data-view="roster" role="tab">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 19c.6-3.2 2.9-5 5.5-5s4.9 1.8 5.5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="17" cy="9" r="2.4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M16.2 14.2c2.3.2 4 1.7 4.4 4.3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-      <span>Classe</span>
+      <span data-i18n="nav.roster">Classe</span>
     </button>
     <button class="tab" data-view="cards" role="tab">
       <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="8" y="8" width="3.2" height="3.2" fill="currentColor"/><rect x="13" y="8" width="3.2" height="3.2" fill="currentColor"/><rect x="8" y="13" width="3.2" height="3.2" fill="currentColor"/></svg>
-      <span>Cartes</span>
+      <span data-i18n="nav.cards">Cartes</span>
     </button>
-    <span class="rail-group">Faire passer</span>
+    <span class="rail-group" data-i18n="nav.group.run">Faire passer</span>
     <button class="tab" data-view="scan" role="tab">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M4 12h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-      <span>Scan</span>
+      <span data-i18n="nav.scan">Scan</span>
     </button>
     <button class="tab" data-view="projection" role="tab">
       <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M9 21h6M12 17v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-      <span>Projection</span>
+      <span data-i18n="nav.projection">Projection</span>
     </button>
-    <span class="rail-group">Analyser</span>
+    <span class="rail-group" data-i18n="nav.group.analyze">Analyser</span>
     <button class="tab" data-view="results" role="tab">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M21 20H3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-      <span>Résultats</span>
+      <span data-i18n="nav.results">Résultats</span>
     </button>
   </nav>
+  <div class="rail-lang">
+    <label for="lang-select" class="rail-lang-label" data-i18n="lang.label">Langue</label>
+    <select id="lang-select" class="rail-lang-select">
+      <option value="fr">Français</option>
+      <option value="en">English</option>
+      <option value="es">Español</option>
+    </select>
+  </div>
 </aside>
 
 <main id="main">
@@ -60,15 +68,15 @@
   <!-- ====== Vue : liste des questionnaires ====== -->
   <section id="view-quizzes" class="view">
     <div class="view-head">
-      <h1>Questionnaires</h1>
+      <h1 data-i18n="quizzes.title">Questionnaires</h1>
       <div class="view-actions">
-        <button id="btn-import-quiz-url" class="btn ghost">Importer depuis un lien…</button>
-        <button id="btn-import-quiz" class="btn ghost">Importer un fichier…</button>
-        <button id="btn-new-quiz" class="btn primary">Nouveau questionnaire</button>
+        <button id="btn-import-quiz-url" class="btn ghost" data-i18n="quizzes.importUrl">Importer depuis un lien…</button>
+        <button id="btn-import-quiz" class="btn ghost" data-i18n="quizzes.importFile">Importer un fichier…</button>
+        <button id="btn-new-quiz" class="btn primary" data-i18n="quizzes.new">Nouveau questionnaire</button>
       </div>
     </div>
     <div id="quiz-list" class="card-list"></div>
-    <p id="quiz-empty" class="empty hidden">
+    <p id="quiz-empty" class="empty hidden" data-i18n="quizzes.empty">
       Aucun questionnaire pour l'instant. Créez le premier avec « Nouveau questionnaire ».
     </p>
     <input type="file" id="file-import-quiz" accept=".json,.csv,.txt" class="hidden">
@@ -77,38 +85,38 @@
   <!-- ====== Vue : éditeur d'un questionnaire ====== -->
   <section id="view-editor" class="view hidden">
     <div class="view-head">
-      <button id="btn-back-quizzes" class="btn ghost">&larr; Retour</button>
+      <button id="btn-back-quizzes" class="btn ghost" data-i18n="editor.back">&larr; Retour</button>
       <div class="view-actions">
-        <button id="btn-export-quiz" class="btn ghost">Exporter en JSON</button>
-        <button id="btn-save-quiz" class="btn primary">Enregistrer</button>
+        <button id="btn-export-quiz" class="btn ghost" data-i18n="editor.exportJson">Exporter en JSON</button>
+        <button id="btn-save-quiz" class="btn primary" data-i18n="editor.save">Enregistrer</button>
       </div>
     </div>
     <label class="field">
-      <span class="field-label">Titre du questionnaire</span>
-      <input type="text" id="quiz-title" placeholder="Ex. : Fractions — évaluation 3" maxlength="120">
+      <span class="field-label" data-i18n="editor.titleLabel">Titre du questionnaire</span>
+      <input type="text" id="quiz-title" data-i18n-placeholder="editor.titlePlaceholder" placeholder="Ex. : Fractions — évaluation 3" maxlength="120">
     </label>
-    <p class="hint">Écritures mathématiques : placez la formule entre deux symboles
+    <p class="hint" data-i18n="editor.mathHint">Écritures mathématiques : placez la formule entre deux symboles
       dollar — <code>$\frac{3}{4}$</code> pour une fraction empilée,
       <code>$5^2$</code> pour une puissance, <code>$\sqrt{16}$</code> pour une racine.
       Un aperçu s'affiche sous le champ dès qu'un $ est saisi.</p>
     <div id="question-list"></div>
-    <button id="btn-add-question" class="btn dashed">+ Ajouter une question</button>
+    <button id="btn-add-question" class="btn dashed" data-i18n="editor.addQuestion">+ Ajouter une question</button>
     <p id="editor-status" class="status" role="status"></p>
   </section>
 
   <!-- ====== Vue : liste de classe ====== -->
   <section id="view-roster" class="view hidden">
     <div class="view-head">
-      <h1>Classe</h1>
+      <h1 data-i18n="roster.title">Classe</h1>
       <div class="view-actions">
-        <button id="btn-reset-roster" class="btn danger">Réinitialiser</button>
-        <button id="btn-share-roster" class="btn ghost">Partager…</button>
-        <button id="btn-import-roster" class="btn ghost">Importer CSV…</button>
-        <button id="btn-export-roster" class="btn ghost">Exporter CSV</button>
-        <button id="btn-save-roster" class="btn primary">Enregistrer la classe</button>
+        <button id="btn-reset-roster" class="btn danger" data-i18n="roster.reset">Réinitialiser</button>
+        <button id="btn-share-roster" class="btn ghost" data-i18n="roster.share">Partager…</button>
+        <button id="btn-import-roster" class="btn ghost" data-i18n="roster.import">Importer CSV…</button>
+        <button id="btn-export-roster" class="btn ghost" data-i18n="roster.export">Exporter CSV</button>
+        <button id="btn-save-roster" class="btn primary" data-i18n="roster.save">Enregistrer la classe</button>
       </div>
     </div>
-    <p class="hint">
+    <p class="hint" data-i18n="roster.hint">
       Chaque élève reçoit une carte numérotée. Le numéro imprimé sur la carte correspond
       à la ligne ci-dessous. Les fichiers de scan ne contiennent que les numéros,
       jamais les noms. Fichier CSV attendu (créé avec Excel) : colonnes
@@ -122,12 +130,12 @@
   <!-- ====== Vues à venir (phases 2 à 4) ====== -->
   <section id="view-cards" class="view hidden">
     <div class="view-head">
-      <h1>Cartes-réponses</h1>
+      <h1 data-i18n="cards.title">Cartes-réponses</h1>
       <div class="view-actions">
-        <button id="btn-generate-cards" class="btn primary">Générer le PDF (40 cartes)</button>
+        <button id="btn-generate-cards" class="btn primary" data-i18n="cards.generate">Générer le PDF (40 cartes)</button>
       </div>
     </div>
-    <p class="hint">
+    <p class="hint" data-i18n="cards.hint">
       Une carte A5 par élève, avec un marqueur unique de 12&nbsp;cm. L'élève tient sa carte
       avec la lettre de sa réponse (A, B, C ou D) <strong>vers le haut</strong>.
       Conseils d'impression : encre bien noire, qualité normale ou supérieure,
@@ -136,7 +144,7 @@
     </p>
     <label class="check-row">
       <input type="checkbox" id="cards-names">
-      <span>Imprimer aussi le prénom et le nom de l'élève sur sa carte
+      <span data-i18n="cards.namesLabel">Imprimer aussi le prénom et le nom de l'élève sur sa carte
       (sinon, seulement le numéro)</span>
     </label>
     <p id="cards-status" class="status" role="status"></p>
@@ -144,21 +152,21 @@
   <section id="view-scan" class="view hidden">
     <!-- Préparation de session -->
     <div id="scan-setup">
-      <div class="view-head"><h1>Scan</h1></div>
-      <p class="hint">
+      <div class="view-head"><h1 data-i18n="scan.title">Scan</h1></div>
+      <p class="hint" data-i18n="scan.setupHint">
         Sur le téléphone : importez d'abord le questionnaire (section Questionnaires
         → Importer) et, si vous voulez le compteur exact, la classe (section Classe
         → Importer CSV). Puis lancez la session ici.
       </p>
       <label class="field">
-        <span class="field-label">Questionnaire à faire passer</span>
+        <span class="field-label" data-i18n="scan.quizLabel">Questionnaire à faire passer</span>
         <select id="scan-quiz-select"></select>
       </label>
       <div class="view-actions">
-        <button id="btn-calibrage" class="btn ghost">Calibrage (A, B, C, D)</button>
-        <button id="btn-start-session" class="btn primary">Démarrer la session</button>
+        <button id="btn-calibrage" class="btn ghost" data-i18n="scan.calibrate">Calibrage (A, B, C, D)</button>
+        <button id="btn-start-session" class="btn primary" data-i18n="scan.start">Démarrer la session</button>
       </div>
-      <h2 class="section-title">Sessions enregistrées</h2>
+      <h2 class="section-title" data-i18n="scan.savedSessions">Sessions enregistrées</h2>
       <div id="scan-sessions" class="card-list"></div>
     </div>
 
@@ -170,8 +178,8 @@
           <div id="scan-q-num" class="scan-q-num"></div>
           <div id="scan-q-text" class="scan-q-text"></div>
         </div>
-        <button id="btn-scan-reveal" class="btn small ghost">Corriger</button>
-        <button id="scan-q-next" class="btn small primary">Suivante &rarr;</button>
+        <button id="btn-scan-reveal" class="btn small ghost" data-i18n="scan.reveal">Corriger</button>
+        <button id="scan-q-next" class="btn small primary" data-i18n="scan.next">Suivante &rarr;</button>
       </div>
       <div class="scan-video-wrap">
         <video id="scan-video" playsinline muted></video>
@@ -180,38 +188,38 @@
         <div id="scan-counter" class="scan-counter">0 / 0</div>
       </div>
       <div class="scan-projector">
-        <input type="text" id="scan-projector-code" placeholder="Code projection"
+        <input type="text" id="scan-projector-code" data-i18n-placeholder="scan.codePlaceholder" placeholder="Code projection"
           maxlength="5" autocapitalize="characters" autocomplete="off">
-        <button id="btn-scan-qr" class="btn small ghost">Scanner le QR</button>
-        <button id="btn-scan-projector" class="btn small ghost">Projeter</button>
+        <button id="btn-scan-qr" class="btn small ghost" data-i18n="scan.scanQr">Scanner le QR</button>
+        <button id="btn-scan-projector" class="btn small ghost" data-i18n="scan.project">Projeter</button>
         <span id="scan-projector-status" class="status" style="flex:1"></span>
       </div>
-      <button id="btn-restart-cam" class="btn small ghost" style="margin-top:0.5rem">
+      <button id="btn-restart-cam" class="btn small ghost" style="margin-top:0.5rem" data-i18n="scan.restartCam">
         Relancer la caméra</button>
       <div id="scan-zoom-wrap" class="scan-zoom hidden">
-        <span>Zoom</span>
+        <span data-i18n="scan.zoom">Zoom</span>
         <input type="range" id="scan-zoom">
       </div>
       <p id="scan-cam-status" class="status"></p>
-      <p class="hint">Balayez lentement la classe. Vert = réponse enregistrée.
+      <p class="hint" data-i18n="scan.liveHint">Balayez lentement la classe. Vert = réponse enregistrée.
         Touchez une pastille pour corriger ou saisir à la main (rattrapage).</p>
       <div id="scan-chips" class="chips"></div>
       <div class="scan-actions">
-        <button id="btn-local-proj" class="btn primary">Projeter sur cet écran</button>
-        <button id="btn-end-session" class="btn danger">Terminer la session</button>
+        <button id="btn-local-proj" class="btn primary" data-i18n="scan.projectHere">Projeter sur cet écran</button>
+        <button id="btn-end-session" class="btn danger" data-i18n="scan.endSession">Terminer la session</button>
       </div>
 
       <!-- Projection locale : même écran, la caméra continue en arrière-plan -->
       <div id="local-proj" class="local-proj hidden">
         <div class="local-proj-bar">
-          <button id="lp-prev" class="btn small ghost">&larr; Précédente</button>
+          <button id="lp-prev" class="btn small ghost" data-i18n="scan.lp.prev">&larr; Précédente</button>
           <div class="local-proj-mid">
             <span id="lp-q-num" class="proj-q-num"></span>
             <span id="lp-counter" class="proj-counter"></span>
           </div>
-          <button id="lp-reveal" class="btn small ghost">Corriger</button>
-          <button id="lp-next" class="btn small primary">Suivante &rarr;</button>
-          <button id="lp-close" class="btn small danger" title="Fermer la projection">&times;</button>
+          <button id="lp-reveal" class="btn small ghost" data-i18n="scan.lp.reveal">Corriger</button>
+          <button id="lp-next" class="btn small primary" data-i18n="scan.lp.next">Suivante &rarr;</button>
+          <button id="lp-close" class="btn small danger" data-i18n-title="scan.lp.close" title="Fermer la projection">&times;</button>
         </div>
         <div id="lp-q-text" class="proj-q-text"></div>
         <div id="lp-chips" class="proj-chip-grid"></div>
@@ -230,21 +238,21 @@
           <button class="btn modal-letter" data-letter="D">D</button>
         </div>
         <div class="modal-foot">
-          <button id="scan-modal-clear" class="btn small danger">Effacer la réponse</button>
-          <button id="scan-modal-cancel" class="btn small ghost">Annuler</button>
+          <button id="scan-modal-clear" class="btn small danger" data-i18n="scan.modal.clear">Effacer la réponse</button>
+          <button id="scan-modal-cancel" class="btn small ghost" data-i18n="scan.modal.cancel">Annuler</button>
         </div>
       </div>
     </div>
   </section>
   <section id="view-projection" class="view hidden">
     <div class="view-head">
-      <h1>Projection</h1>
+      <h1 data-i18n="proj.title">Projection</h1>
       <div class="view-actions">
-        <button id="btn-proj-full" class="btn ghost">Plein écran</button>
-        <button id="btn-proj-start" class="btn primary">Ouvrir la projection</button>
+        <button id="btn-proj-full" class="btn ghost" data-i18n="proj.fullscreen">Plein écran</button>
+        <button id="btn-proj-start" class="btn primary" data-i18n="proj.open">Ouvrir la projection</button>
       </div>
     </div>
-    <p class="hint">
+    <p class="hint" data-i18n="proj.hint">
       Sur le PC relié au vidéoprojecteur : cliquez « Ouvrir la projection », un code
       s'affiche. Sur le téléphone, en session de scan, entrez ce code (champ
       « Projeter »). La question et la liste des élèves (gris = pas encore répondu,
@@ -254,13 +262,13 @@
     <div id="proj-screen" class="proj-screen">
       <div id="proj-wait" class="proj-wait">
         <div id="proj-qr" class="proj-qr"></div>
-        <div class="proj-code-label">Code de session</div>
+        <div class="proj-code-label" data-i18n="proj.codeLabel">Code de session</div>
         <div id="proj-code" class="proj-code">—</div>
         <p id="proj-status" class="status"></p>
       </div>
       <div id="proj-display" class="hidden">
         <div class="proj-head">
-          <button id="btn-proj-end" class="btn small danger proj-end">Terminer la session</button>
+          <button id="btn-proj-end" class="btn small danger proj-end" data-i18n="proj.endSession">Terminer la session</button>
           <span id="proj-q-num" class="proj-q-num"></span>
           <span id="proj-counter" class="proj-counter"></span>
         </div>
@@ -273,20 +281,20 @@
 
   <section id="view-results" class="view hidden">
     <div class="view-head">
-      <h1>Résultats</h1>
+      <h1 data-i18n="results.title">Résultats</h1>
       <div class="view-actions">
-        <button id="btn-groupe-besoin" class="btn ghost">Créer groupe de besoin</button>
-        <button id="btn-import-session" class="btn ghost">Importer des résultats…</button>
-        <button id="btn-export-results-xlsx" class="btn primary">Exporter Excel</button>
-        <button id="btn-export-results-csv" class="btn ghost">Exporter CSV</button>
-        <button id="btn-export-results-txt" class="btn ghost">Exporter TXT</button>
+        <button id="btn-groupe-besoin" class="btn ghost" data-i18n="results.createGroup">Créer groupe de besoin</button>
+        <button id="btn-import-session" class="btn ghost" data-i18n="results.import">Importer des résultats…</button>
+        <button id="btn-export-results-xlsx" class="btn primary" data-i18n="results.exportXlsx">Exporter Excel</button>
+        <button id="btn-export-results-csv" class="btn ghost" data-i18n="results.exportCsv">Exporter CSV</button>
+        <button id="btn-export-results-txt" class="btn ghost" data-i18n="results.exportTxt">Exporter TXT</button>
       </div>
     </div>
     <label class="field">
-      <span class="field-label">Session à analyser</span>
+      <span class="field-label" data-i18n="results.sessionLabel">Session à analyser</span>
       <select id="results-session-select"></select>
     </label>
-    <p id="results-empty" class="empty hidden">
+    <p id="results-empty" class="empty hidden" data-i18n="results.empty">
       Aucune session sur cet appareil. Importez le fichier JSON exporté depuis le
       téléphone (ou ouvrez un lien de partage de résultats).
     </p>
@@ -294,18 +302,18 @@
     <div id="results-body" class="hidden">
       <div id="results-besoin" class="besoin-panel hidden">
         <div class="besoin-head">
-          <strong>Groupe de besoin (50 % ou moins)</strong>
+          <strong data-i18n="results.groupTitle">Groupe de besoin (50 % ou moins)</strong>
           <div>
-            <button id="besoin-copy" class="btn small ghost">Copier la liste</button>
-            <button id="besoin-close" class="btn small ghost">Fermer</button>
+            <button id="besoin-copy" class="btn small ghost" data-i18n="results.copyList">Copier la liste</button>
+            <button id="besoin-close" class="btn small ghost" data-i18n="results.close">Fermer</button>
           </div>
         </div>
         <div id="besoin-list"></div>
       </div>
       <nav class="subtabs">
-        <button class="subtab active" data-sub="summary">Résumé</button>
-        <button class="subtab" data-sub="students">Participants</button>
-        <button class="subtab" data-sub="questions">Questions</button>
+        <button class="subtab active" data-sub="summary" data-i18n="results.tab.summary">Résumé</button>
+        <button class="subtab" data-sub="students" data-i18n="results.tab.students">Participants</button>
+        <button class="subtab" data-sub="questions" data-i18n="results.tab.questions">Questions</button>
       </nav>
       <div id="results-summary"></div>
       <div id="results-students" class="hidden"></div>
@@ -321,14 +329,14 @@
       <p id="share-title" class="modal-title"></p>
       <p id="share-warn" class="share-warn hidden"></p>
       <div id="share-qr" class="share-qr"></div>
-      <p class="hint">Scannez ce QR code avec l'appareil photo du téléphone,
+      <p class="hint" data-i18n="share.hint">Scannez ce QR code avec l'appareil photo du téléphone,
         ou copiez le lien ci-dessous. Les données sont contenues dans le lien
         lui-même : rien n'est envoyé sur un serveur.</p>
       <input type="text" id="share-link" readonly>
       <p id="share-status" class="status"></p>
       <div class="modal-foot">
-        <button id="share-copy" class="btn small primary">Copier le lien</button>
-        <button id="share-close" class="btn small ghost">Fermer</button>
+        <button id="share-copy" class="btn small primary" data-i18n="share.copy">Copier le lien</button>
+        <button id="share-close" class="btn small ghost" data-i18n="share.close">Fermer</button>
       </div>
     </div>
   </div>
@@ -339,6 +347,7 @@
 <script src="lib/aruco.js"></script>
 <script src="lib/jsqr.js"></script>
 <script src="lib/jspdf.umd.min.js"></script>
+<script src="js/i18n.js"></script>
 <script src="js/storage.js"></script>
 <script src="js/io.js"></script>
 <script src="js/editor.js"></script>

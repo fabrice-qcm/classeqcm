@@ -23,6 +23,20 @@ const App = (() => {
   }
 
   function init() {
+    I18n.init();
+    const langSel = document.getElementById('lang-select');
+    if (langSel) {
+      langSel.value = I18n.get();
+      langSel.onchange = () => I18n.setLang(langSel.value);
+    }
+    // Quand la langue change, re-générer les vues rendues en JS pour que leurs
+    // libellés dynamiques (options de select, cartes, etc.) suivent aussi.
+    I18n.onChange(() => {
+      Editor.renderList();
+      if (currentView === 'roster') Roster.render();
+      if (currentView === 'scan') Scan.renderSetup && Scan.renderSetup();
+      if (currentView === 'results') Results.render();
+    });
     document.querySelectorAll('.tab').forEach(t => {
       t.onclick = () => show(t.dataset.view);
     });

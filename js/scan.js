@@ -158,8 +158,7 @@ const Scan = (() => {
   async function resumeSession(s) {
     const q = s.quiz || await Storage.getQuiz(s.quizId);
     if (!q) {
-      alert('Le questionnaire de cette session est introuvable sur cet appareil : ' +
-        'importez-le d\u2019abord (onglet Questionnaires).');
+      alert(I18n.t('scan.status.quizNotFound', { title: s.quizTitre || s.quizId || '' }));
       return;
     }
     quiz = q;
@@ -194,8 +193,7 @@ const Scan = (() => {
         audio: false
       });
     } catch (e) {
-      statusEl.textContent = 'Caméra inaccessible : ' + e.message +
-        '. Vérifiez l\u2019autorisation caméra et que la page est en HTTPS.';
+      statusEl.textContent = I18n.t('scan.status.camError', { msg: e.message });
       statusEl.classList.add('error');
       return;
     }
@@ -218,7 +216,7 @@ const Scan = (() => {
     videoTrack.onended = () => {
       running = false;
       const st = document.getElementById('scan-cam-status');
-      st.textContent = 'Cam\u00e9ra interrompue par le syst\u00e8me \u2014 touchez \u00ab Relancer la cam\u00e9ra \u00bb.';
+      st.textContent = I18n.t('scan.status.camInterrupted');
       st.classList.add('error');
     };
   }
@@ -332,12 +330,12 @@ const Scan = (() => {
     if (session) { session.qIndex = qIndex; Storage.saveSession(session); }
     const q = quiz.questions[qIndex];
     document.getElementById('scan-q-num').textContent =
-      'Question ' + q.num + ' / ' + quiz.questions.length;
+      I18n.t('scan.questionNum', { num: q.num, total: quiz.questions.length });
     MathText.render(document.getElementById('scan-q-text'), q.texte);
     document.getElementById('scan-q-prev').disabled = qIndex === 0;
     const last = qIndex === quiz.questions.length - 1;
     const nextBtn = document.getElementById('scan-q-next');
-    nextBtn.textContent = last ? 'Terminer la session' : 'Question suivante \u2192';
+    nextBtn.textContent = last ? I18n.t('scan.endSession') : I18n.t('scan.nextQuestion');
     nextBtn.disabled = false;
     nextBtn.classList.toggle('primary', !last);
     nextBtn.classList.toggle('danger', last);
@@ -365,7 +363,7 @@ const Scan = (() => {
       if (flash[id] && Date.now() - flash[id] < 1500) chip.classList.add('chip-flash');
       chip.innerHTML = '<span class="chip-num">' + id + '</span>' +
         (det[id] ? '<span class="chip-ans">' + det[id] + '</span>' : '');
-      chip.title = inClass ? [e.prenom, e.nom].filter(Boolean).join(' ') : 'Carte ' + id;
+      chip.title = inClass ? [e.prenom, e.nom].filter(Boolean).join(' ') : I18n.t('scan.card', { id: id });
       chip.onclick = () => manualEntry(id);
       grid.appendChild(chip);
     }
@@ -420,7 +418,7 @@ const Scan = (() => {
       quizzes.forEach(q => {
         const opt = document.createElement('option');
         opt.value = q.id;
-        opt.textContent = q.titre + ' (' + q.questions.length + ' q.)';
+        opt.textContent = I18n.t('scan.questionCount', { title: q.titre, n: q.questions.length });
         select.appendChild(opt);
       });
     }

@@ -536,3 +536,24 @@ h2.section-title { font-size: 1.05rem; color: var(--encre); margin: 1.6rem 0 0.6
   width: auto; font-weight: 600; color: var(--encre); font-size: 0.9rem;
   padding: 0.45rem 2.2rem 0.45rem 1rem; cursor: pointer;
 }
+
+/* ================= sélecteur de langue (rail) ================= */
+.rail-lang { margin-top: auto; padding: 0.6rem 0.6rem 0.2rem; }
+.rail-lang-label {
+  display: block; font-size: 0.66rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.12em;
+  color: rgba(0,0,0,0.55); margin-bottom: 0.3rem;
+}
+.rail-lang-select {
+  width: 100%; font: inherit; font-weight: 600; font-size: 0.88rem;
+  padding: 0.45rem 0.6rem; border-radius: 10px;
+  border: 1.5px solid rgba(0,0,0,0.15); background: rgba(255,255,255,0.6);
+  color: #000; cursor: pointer;
+}
+.rail-lang-select:focus { outline: 2px solid var(--encre); outline-offset: 1px; }
+
+@media (max-width: 760px) {
+  /* Sur mobile le rail devient une barre horizontale : on masque le sélecteur,
+     la langue se choisit alors depuis un réglage ou reste celle du navigateur. */
+  .rail-lang { display: none; }
+}
