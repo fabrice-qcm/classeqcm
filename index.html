@@ -182,6 +182,7 @@
       <div class="scan-projector">
         <input type="text" id="scan-projector-code" placeholder="Code projection"
           maxlength="5" autocapitalize="characters" autocomplete="off">
+        <button id="btn-scan-qr" class="btn small ghost">Scanner le QR</button>
         <button id="btn-scan-projector" class="btn small ghost">Projeter</button>
         <span id="scan-projector-status" class="status" style="flex:1"></span>
       </div>
@@ -195,10 +196,10 @@
       <p class="hint">Balayez lentement la classe. Vert = réponse enregistrée.
         Touchez une pastille pour corriger ou saisir à la main (rattrapage).</p>
       <div id="scan-chips" class="chips"></div>
-      <button id="btn-local-proj" class="btn primary" style="margin-top:1rem">
-        Projeter sur cet écran</button>
-      <button id="btn-end-session" class="btn danger" style="margin-top:1rem">
-        Terminer la session</button>
+      <div class="scan-actions">
+        <button id="btn-local-proj" class="btn primary">Projeter sur cet écran</button>
+        <button id="btn-end-session" class="btn danger">Terminer la session</button>
+      </div>
 
       <!-- Projection locale : même écran, la caméra continue en arrière-plan -->
       <div id="local-proj" class="local-proj hidden">
@@ -252,6 +253,7 @@
     </p>
     <div id="proj-screen" class="proj-screen">
       <div id="proj-wait" class="proj-wait">
+        <div id="proj-qr" class="proj-qr"></div>
         <div class="proj-code-label">Code de session</div>
         <div id="proj-code" class="proj-code">—</div>
         <p id="proj-status" class="status"></p>
@@ -335,6 +337,7 @@
 
 <script src="lib/cv.js"></script>
 <script src="lib/aruco.js"></script>
+<script src="lib/jsqr.js"></script>
 <script src="lib/jspdf.umd.min.js"></script>
 <script src="js/storage.js"></script>
 <script src="js/io.js"></script>

@@ -39,6 +39,9 @@ const Scan = (() => {
   let accel = { x: 0, y: 0, ok: false };
   let lastPhysicalQ = 0;
 
+  let qrScanning = false;        // recherche active d'un QR de session dans le flux
+  let onQrFound = null;          // callback appelé avec le code décodé
+
   function onMotion(e) {
     const g = e.accelerationIncludingGravity;
     if (!g || g.x === null || g.y === null) return;
@@ -222,6 +225,7 @@ const Scan = (() => {
 
   function stopCamera() {
     running = false;
+    qrScanning = false; onQrFound = null;
     window.removeEventListener('devicemotion', onMotion);
     if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
     videoTrack = null;
@@ -261,6 +265,22 @@ const Scan = (() => {
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     ctx.drawImage(video, 0, 0);
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+    // Recherche d'un QR de session (mode Projeter par QR). Réutilise l'image déjà
+    // capturée ; jsQR est tolérant, on décode donc sur la frame telle quelle.
+    if (qrScanning && window.jsQR) {
+      let qr = null;
+      try { qr = jsQR(imageData.data, imageData.width, imageData.height); } catch (_) {}
+      if (qr && qr.data) {
+        const m = /^CQCM:([A-Z0-9]{5})$/.exec(qr.data.trim().toUpperCase());
+        if (m) {
+          const code = m[1];
+          qrScanning = false;
+          const cb = onQrFound; onQrFound = null;
+          if (cb) cb(code);
+        }
+      }
+    }
 
     let markers = [];
     try { markers = detector.detect(imageData); } catch (_) { /* image dégradée : on passe */ }
@@ -565,5 +585,15 @@ const Scan = (() => {
     if (message) alert(message);
   }
 
-  return { init, renderSetup, onEnter, onLeave, forceEnd, _test: { markerToAnswer, feed: (m) => feed(m), _acc: () => acc, _reset: () => { acc = {}; } } };
+  /* Recherche d'un QR de session dans le flux caméra en cours.
+     Ne démarre que si la caméra tourne (session active). */
+  function startQrScan(cb) {
+    if (!running) return false;
+    onQrFound = cb;
+    qrScanning = true;
+    return true;
+  }
+  function stopQrScan() { qrScanning = false; onQrFound = null; }
+
+  return { init, renderSetup, onEnter, onLeave, forceEnd, startQrScan, stopQrScan, _test: { markerToAnswer, feed: (m) => feed(m), _acc: () => acc, _reset: () => { acc = {}; } } };
 })();

@@ -53,7 +53,7 @@ const Results = (() => {
       return {
         q: q, counts: counts, invalid: invalid, none: none,
         answered: answered, correct: correct,
-        pct: answered ? Math.round(100 * correct / answered) : null
+        pct: students.length ? Math.round(100 * correct / students.length) : null
       };
     });
 
@@ -120,32 +120,88 @@ const Results = (() => {
     }
     const tip = 'Question : ' + MathText.plain(question.texte) + '\n' +
       'R\u00e9ponse de ' + student.label + ' : ' + reponse;
-    const cls = a.letter === null ? 'rc-none' : (a.ok ? 'rc-ok' : 'rc-ko');
-    const mark = a.letter === null ? '\u2013' : (a.ok ? '\u2713' : '\u2717');
-    return '<td class="rc-cell ' + cls + '" title="' + escapeAttr(tip) + '">' + mark + '</td>';
+    let mark;
+    if (a.letter === null) mark = '<span class="rc-mark none">\u2013</span>';
+    else if (a.ok) mark = '<span class="rc-mark ok">\u2713</span>';
+    else mark = '<span class="rc-mark ko">\u2715</span>';
+    return '<td class="rc-cell" title="' + escapeAttr(tip) + '">' + mark + '</td>';
+  }
+
+  /* Classe couleur selon le taux de réussite : rouge <= 40, orange 41-80, vert 81-100 */
+  function pctClass(pct) {
+    if (pct === null) return 'na';
+    if (pct <= 40) return 'r';
+    if (pct <= 80) return 'o';
+    return 'g';
   }
 
   /* ---------- onglet 1 : résumé (matrice) ---------- */
+  let summarySort = 'nom';   // 'nom' | 'prenom' | 'precision'
+
   function renderSummary() {
     const wrap = document.getElementById('results-summary');
     const n = data.quiz.questions.length;
-    let html = '<div class="table-scroll"><table class="rc-table"><thead><tr><th>\u00c9l\u00e8ve</th>';
+    const N = data.students.length;
+
+    /* Statistiques de classe.
+       Précision = points obtenus / (points possibles x élèves) — 1 pt par question juste.
+       Taux d'achèvement = questions tentées / (questions x élèves). */
+    const totalCorrect = data.students.reduce((a, s) => a + s.correct, 0);
+    const totalAnswered = data.students.reduce((a, s) => a + s.answered, 0);
+    const precision = N && n ? Math.round(100 * totalCorrect / (n * N)) : null;
+    const achevement = N && n ? Math.round(100 * totalAnswered / (n * N)) : null;
+
+    let html =
+      '<div class="rc-stats">' +
+        '<div class="rc-stat"><div class="rc-stat-label">Pr\u00e9cision</div>' +
+          '<div class="rc-stat-value ' + pctClass(precision) + '">' +
+          (precision === null ? '\u2013' : precision + '\u00a0%') + '</div></div>' +
+        '<div class="rc-stat"><div class="rc-stat-label">Taux d\u2019ach\u00e8vement</div>' +
+          '<div class="rc-stat-value ' + pctClass(achevement) + '">' +
+          (achevement === null ? '\u2013' : achevement + '\u00a0%') + '</div></div>' +
+        '<div class="rc-stat"><div class="rc-stat-label">\u00c9l\u00e8ves</div>' +
+          '<div class="rc-stat-value">' + N + '</div></div>' +
+        '<div class="rc-stat"><div class="rc-stat-label">Questions</div>' +
+          '<div class="rc-stat-value">' + n + '</div></div>' +
+      '</div>';
+
+    html += '<div class="rc-sortbar"><label for="rc-summary-sort">Trier par</label>' +
+      '<select id="rc-summary-sort">' +
+      '<option value="nom">Nom de famille</option>' +
+      '<option value="prenom">Pr\u00e9nom</option>' +
+      '<option value="precision">Pr\u00e9cision</option>' +
+      '</select></div>';
+
+    const sorted = [...data.students].sort((a, b) => {
+      if (summarySort === 'prenom')
+        return (a.prenom || a.label).localeCompare(b.prenom || b.label, 'fr') || (a.id - b.id);
+      if (summarySort === 'precision')
+        return (b.pct - a.pct) || (b.correct - a.correct) || (a.id - b.id);
+      return (a.nom || a.label).localeCompare(b.nom || b.label, 'fr') || (a.id - b.id);
+    });
+
+    html += '<div class="table-scroll"><table class="rc-table"><thead><tr><th>\u00c9l\u00e8ve</th>';
     for (let i = 0; i < n; i++) {
       const pq = data.perQuestion[i];
       html += '<th class="rc-qhead">Q' + (i + 1) +
-        '<span class="rc-qpct">' + (pq.pct === null ? '\u2013' : pq.pct + '\u00a0%') + '</span></th>';
+        '<span class="rc-qpct-badge ' + pctClass(pq.pct) + '">' +
+        (pq.pct === null ? '\u2013' : pq.pct + '%') + '</span></th>';
     }
     html += '<th>Score</th></tr></thead><tbody>';
-    data.students.forEach(s => {
+    sorted.forEach(s => {
       html += '<tr><td class="rc-name"></td>';
       s.answers.forEach((a, qi) => { html += cellMark(a, data.quiz.questions[qi], s); });
-      html += '<td class="rc-score">' + s.correct + '/' + data.quiz.questions.length +
-        '<span class="rc-qpct">' + s.pct + '\u00a0%</span></td></tr>';
+      html += '<td class="rc-score">' +
+        '<span class="rc-score-pct">' + s.pct + '\u00a0%</span>' +
+        '<span class="rc-score-frac">' + s.correct + '/' + n + '</span></td></tr>';
     });
     html += '</tbody></table></div>';
     wrap.innerHTML = html;
     // Noms injectés en textContent (jamais en HTML)
-    wrap.querySelectorAll('.rc-name').forEach((td, i) => { td.textContent = data.students[i].label; });
+    wrap.querySelectorAll('.rc-name').forEach((td, i) => { td.textContent = sorted[i].label; });
+    const sortSel = document.getElementById('rc-summary-sort');
+    sortSel.value = summarySort;
+    sortSel.onchange = () => { summarySort = sortSel.value; renderSummary(); };
   }
 
   /* ---------- onglet 2 : participants (triable) ---------- */

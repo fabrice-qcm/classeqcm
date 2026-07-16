@@ -22,11 +22,29 @@ const Projection = (() => {
     return c;
   }
 
+  // Encode uniquement le code (pas d'URL) : le téléphone le lit avec sa propre
+  // caméra depuis le mode Scan, sans jamais quitter l'application.
+  function renderHostQR(code) {
+    const box = document.getElementById('proj-qr');
+    if (!box) return;
+    box.innerHTML = '';
+    try {
+      const qr = qrcode(0, 'M');
+      qr.addData('CQCM:' + code, 'Byte');
+      qr.make();
+      box.innerHTML = qr.createSvgTag({ cellSize: 6, margin: 2, scalable: true });
+      box.querySelector('svg').setAttribute('style', 'width:100%;height:auto;max-width:220px');
+    } catch (_) {
+      box.innerHTML = '';   // le code alphanumérique en dessous reste utilisable
+    }
+  }
+
   async function startHost() {
     stopHost();
     const code = randomCode();
     setHostStatus('Connexion au service d\u2019annuaire\u2026');
     document.getElementById('proj-code').textContent = code;
+    renderHostQR(code);
     try {
       hostPeer = new Peer(PREFIX + code, { debug: 0 });
     } catch (e) {
@@ -229,8 +247,8 @@ const Projection = (() => {
       phoneConn.on('error', () => onStatus('Erreur de connexion.', true));
     });
     phonePeer.on('error', e => {
-      onStatus('\u00c9chec (' + e.type + '). Internet requis pour \u00e9tablir la connexion ; ' +
-        'si le Wi-Fi de l\u2019\u00e9cole bloque, essayez en 4G/5G.', true);
+      onStatus('En attente que la projection soit ouverte sur l\u2019ordinateur\u2026 ' +
+        'Internet requis (wifi ou 4G/5G)', true);
     });
   }
 
@@ -268,14 +286,27 @@ const Projection = (() => {
     };
     // Côté téléphone (dans le mode Scan)
     const btnConnect = document.getElementById('btn-scan-projector');
-    if (btnConnect) btnConnect.onclick = () => {
-      const code = document.getElementById('scan-projector-code').value;
-      phoneConnect(code, (msg, isError, isOk) => {
-        const el = document.getElementById('scan-projector-status');
+    const statusOf = () => {
+      const el = document.getElementById('scan-projector-status');
+      return (msg, isError, isOk) => {
         el.textContent = msg;
         el.classList.toggle('error', !!isError);
         el.style.color = isOk ? 'var(--ok)' : '';
+      };
+    };
+    if (btnConnect) btnConnect.onclick = () => {
+      const code = document.getElementById('scan-projector-code').value;
+      phoneConnect(code, statusOf());
+    };
+    const btnQr = document.getElementById('btn-scan-qr');
+    if (btnQr) btnQr.onclick = () => {
+      const setStatus = statusOf();
+      const ok = Scan.startQrScan(code => {
+        document.getElementById('scan-projector-code').value = code;
+        phoneConnect(code, setStatus);
       });
+      if (ok) setStatus('Visez le QR affich\u00e9 sur l\u2019ordinateur\u2026');
+      else setStatus('D\u00e9marrez d\u2019abord une session de scan.', true);
     };
   }
 
