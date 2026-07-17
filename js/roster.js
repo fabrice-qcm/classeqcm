@@ -17,9 +17,9 @@ const Roster = (() => {
       num.textContent = i + 1;
       row.appendChild(num);
 
-      row.appendChild(makeInput('nom', 'Nom', eleve.nom));
-      row.appendChild(makeInput('prenom', 'Prénom', eleve.prenom));
-      row.appendChild(makeInput('niveau', 'Niv.', eleve.niveau, 'roster-niveau'));
+      row.appendChild(makeInput('nom', I18n.t('roster.fieldName'), eleve.nom));
+      row.appendChild(makeInput('prenom', I18n.t('roster.fieldFirstName'), eleve.prenom));
+      row.appendChild(makeInput('niveau', I18n.t('roster.fieldLevel'), eleve.niveau, 'roster-niveau'));
 
       grid.appendChild(row);
     });
@@ -53,7 +53,8 @@ const Roster = (() => {
     const roster = readGrid();
     await Storage.saveRoster(roster);
     const filled = roster.filter(e => e.nom || e.prenom).length;
-    setStatus('Classe enregistrée (' + filled + ' élève' + (filled > 1 ? 's' : '') + ').');
+    const word = I18n.plural(filled, I18n.t('roster.studentSingular'), I18n.t('roster.studentPlural'));
+    setStatus(I18n.t('roster.saved', { n: filled, word: word }));
     return roster;
   }
 
@@ -80,7 +81,7 @@ const Roster = (() => {
   async function importCSVFile(file) {
     try {
       const rows = IO.parseCSV(await IO.readFileSmart(file));
-      if (rows.length === 0) throw new Error('Fichier vide.');
+      if (rows.length === 0) throw new Error(I18n.t('roster.importEmptyFile'));
 
       let start = 0;
       if (!/^\d+$/.test(rows[0][0])) start = 1; // en-tête détecté
@@ -93,7 +94,7 @@ const Roster = (() => {
         const cells = rows[r];
         const numero = parseInt(cells[0], 10);
         if (isNaN(numero) || numero < 1 || numero > 40) {
-          problemes.push('ligne ' + (r + 1) + ' : numéro invalide « ' + cells[0] + ' »');
+          problemes.push(I18n.t('roster.importBadRow', { row: r + 1, value: cells[0] }));
           continue;
         }
         roster[numero - 1] = {
@@ -104,15 +105,17 @@ const Roster = (() => {
         ok++;
       }
 
-      if (ok === 0) throw new Error('Aucune ligne exploitable. ' + problemes.join(' ; '));
+      if (ok === 0) throw new Error(I18n.t('roster.importNoRow', { details: problemes.join(' ; ') }));
 
       await Storage.saveRoster(roster);
       await render();
-      let msg = ok + ' élève' + (ok > 1 ? 's' : '') + ' importé' + (ok > 1 ? 's' : '') + '.';
-      if (problemes.length) msg += ' Ignoré : ' + problemes.join(' ; ');
+      const word = I18n.plural(ok, I18n.t('roster.studentSingular'), I18n.t('roster.studentPlural'));
+      const imported = I18n.plural(ok, I18n.t('roster.importedSingular'), I18n.t('roster.importedPlural'));
+      let msg = I18n.t('roster.importOk', { n: ok, word: word, imported: imported });
+      if (problemes.length) msg += I18n.t('roster.importIgnored', { details: problemes.join(' ; ') });
       setStatus(msg, problemes.length > 0);
     } catch (e) {
-      setStatus('Import impossible : ' + e.message, true);
+      setStatus(I18n.t('roster.importError', { msg: e.message }), true);
     }
   }
 
@@ -124,18 +127,19 @@ const Roster = (() => {
 
   function init() {
     document.getElementById('btn-reset-roster').onclick = async () => {
-      if (!confirm('Effacer toute la classe (les 40 lignes) ? Pensez \u00e0 exporter le CSV avant si vous voulez la conserver.')) return;
+      if (!confirm(I18n.t('roster.resetConfirm'))) return;
       await Storage.saveRoster(Array.from({ length: 40 }, () => ({ nom: '', prenom: '', niveau: '' })));
       await render();
-      setStatus('Classe r\u00e9initialis\u00e9e.');
+      setStatus(I18n.t('roster.resetDone'));
     };
     document.getElementById('btn-save-roster').onclick = save;
     document.getElementById('btn-share-roster').onclick = async () => {
       const roster = await save();
       const filled = roster.filter(e => e.nom || e.prenom).length;
-      if (filled === 0) { setStatus('Rien \u00e0 partager : la classe est vide.', true); return; }
-      Share.open(Share.rosterPayload(roster), 'Classe (' + filled + ' \u00e9l\u00e8ves)',
-        'Ce lien contient les noms des \u00e9l\u00e8ves. Ne le partagez qu\u2019entre vos propres appareils.');
+      if (filled === 0) { setStatus(I18n.t('roster.nothingToShare'), true); return; }
+      Share.open(Share.rosterPayload(roster), I18n.t('roster.shareTitle', { n: filled,
+        word: I18n.plural(filled, I18n.t('roster.studentSingular'), I18n.t('roster.studentPlural')) }),
+        I18n.t('roster.shareWarning'));
     };
     document.getElementById('btn-export-roster').onclick = exportCSV;
     const fileInput = document.getElementById('file-import-roster');

@@ -18,7 +18,7 @@ const IO = (() => {
     return new Promise((resolve, reject) => {
       const r = new FileReader();
       r.onload = () => resolve(r.result);
-      r.onerror = () => reject(new Error('Lecture du fichier impossible.'));
+      r.onerror = () => reject(new Error(I18n.t('io.readError')));
       r.readAsText(file, 'utf-8');
     });
   }
@@ -26,19 +26,19 @@ const IO = (() => {
   /* Validation du format questionnaire (voir spec d'échange, version 1). */
   function validateQuiz(obj) {
     const err = msg => { throw new Error(msg); };
-    if (!obj || typeof obj !== 'object') err('Le fichier ne contient pas un objet JSON.');
-    if (obj.type !== 'quiz') err('Ce fichier n\u2019est pas un questionnaire (type attendu : "quiz").');
-    if (obj.version !== 1) err('Version de format inconnue : ' + obj.version);
-    if (typeof obj.titre !== 'string' || !obj.titre.trim()) err('Titre manquant.');
-    if (!Array.isArray(obj.questions) || obj.questions.length === 0) err('Aucune question dans le fichier.');
+    if (!obj || typeof obj !== 'object') err(I18n.t('io.notJsonObject'));
+    if (obj.type !== 'quiz') err(I18n.t('io.notQuiz'));
+    if (obj.version !== 1) err(I18n.t('io.unknownVersion', { v: obj.version }));
+    if (typeof obj.titre !== 'string' || !obj.titre.trim()) err(I18n.t('io.missingTitle'));
+    if (!Array.isArray(obj.questions) || obj.questions.length === 0) err(I18n.t('io.noQuestions'));
     obj.questions.forEach((q, i) => {
       const n = i + 1;
-      if (typeof q.texte !== 'string') err('Question ' + n + ' : texte manquant.');
+      if (typeof q.texte !== 'string') err(I18n.t('io.missingText', { n: n }));
       if (!Array.isArray(q.choix) || q.choix.length < 2 || q.choix.length > 4)
-        err('Question ' + n + ' : il faut entre 2 et 4 choix.');
+        err(I18n.t('io.choiceRange', { n: n }));
       const letters = ['A', 'B', 'C', 'D'].slice(0, q.choix.length);
       if (!letters.includes(q.bonneReponse))
-        err('Question ' + n + ' : bonne réponse invalide (' + q.bonneReponse + ').');
+        err(I18n.t('io.invalidAnswer', { n: n, letter: q.bonneReponse }));
     });
     return obj;
   }
@@ -56,7 +56,7 @@ const IO = (() => {
           resolve(new TextDecoder('windows-1252').decode(buf));
         }
       };
-      r.onerror = () => reject(new Error('Lecture du fichier impossible.'));
+      r.onerror = () => reject(new Error(I18n.t('io.readError')));
       r.readAsArrayBuffer(file);
     });
   }
@@ -95,24 +95,23 @@ const IO = (() => {
      choix A ; choix B ; [choix C] ; [choix D]. */
   function csvToQuiz(rows) {
     const err = msg => { throw new Error(msg); };
-    if (rows.length < 2) err('Le fichier doit contenir un titre puis au moins une question.');
+    if (rows.length < 2) err(I18n.t('io.csvTooShort'));
     const titre = (rows[0][0] || '').trim();
-    if (!titre) err('Titre manquant (ligne 1, colonne 1).');
+    if (!titre) err(I18n.t('io.csvMissingTitle'));
     const LETTRES = ['A', 'B', 'C', 'D'];
     const questions = rows.slice(1).map((cells, i) => {
       const ligne = i + 2;
       const texte = (cells[0] || '').trim();
-      if (!texte) err('Ligne ' + ligne + ' : question vide.');
+      if (!texte) err(I18n.t('io.csvEmptyQuestion', { n: ligne }));
       const choix = cells.slice(2).map(c => c.trim()).filter(c => c !== '');
-      if (choix.length < 2) err('Ligne ' + ligne + ' : au moins 2 choix requis (colonnes 3 et suivantes).');
-      if (choix.length > 4) err('Ligne ' + ligne + ' : 4 choix maximum (' + choix.length + ' trouvés).');
+      if (choix.length < 2) err(I18n.t('io.csvMinChoices', { n: ligne }));
+      if (choix.length > 4) err(I18n.t('io.csvMaxChoices', { n: ligne, count: choix.length }));
       const raw = (cells[1] || '').trim().toUpperCase();
       let idx = -1;
       if (/^[1-4]$/.test(raw)) idx = parseInt(raw, 10) - 1;
       else if (/^[A-D]$/.test(raw)) idx = LETTRES.indexOf(raw);
-      else err('Ligne ' + ligne + ' : bonne réponse « ' + raw + ' » invalide (attendu 1-4 ou A-D).');
-      if (idx >= choix.length) err('Ligne ' + ligne + ' : la bonne réponse (' + raw +
-        ') dépasse le nombre de choix (' + choix.length + ').');
+      else err(I18n.t('io.csvInvalidAnswer', { n: ligne, raw: raw }));
+      if (idx >= choix.length) err(I18n.t('io.csvAnswerOutOfRange', { n: ligne, raw: raw, count: choix.length }));
       return { num: i + 1, texte: texte, choix: choix, bonneReponse: LETTRES[idx] };
     });
     return {
@@ -126,7 +125,7 @@ const IO = (() => {
     return text.toLowerCase()
       .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
       .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
-      .slice(0, 40) || 'sans-titre';
+      .slice(0, 40) || I18n.t('io.slugFallback');
   }
 
   return { download, readFile, readFileSmart, parseCSV, csvToQuiz, validateQuiz, slug };

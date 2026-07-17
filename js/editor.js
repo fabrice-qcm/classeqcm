@@ -17,17 +17,18 @@ const Editor = (() => {
     quizzes.forEach(q => {
       const card = document.createElement('div');
       card.className = 'quiz-card';
-      const date = q.modifie ? new Date(q.modifie).toLocaleDateString('fr-FR') : '';
+      const date = q.modifie ? new Date(q.modifie).toLocaleDateString(I18n.locale()) : '';
+      const qWord = I18n.plural(q.questions.length, I18n.t('editor.questionSingular'), I18n.t('editor.questionPlural'));
       card.innerHTML =
         '<div><div class="quiz-card-title"></div>' +
-        '<div class="quiz-card-meta">' + q.questions.length + ' question' +
-        (q.questions.length > 1 ? 's' : '') + (date ? ' · modifié le ' + date : '') + '</div></div>' +
+        '<div class="quiz-card-meta">' + I18n.t('editor.questionCount', { n: q.questions.length, word: qWord }) +
+        (date ? I18n.t('editor.modified', { date: date }) : '') + '</div></div>' +
         '<div class="quiz-card-actions">' +
-        '<button class="btn small ghost" data-act="edit">Modifier</button>' +
-        '<button class="btn small ghost" data-act="flash">Flashcards</button>' +
-        '<button class="btn small ghost" data-act="share">Partager</button>' +
-        '<button class="btn small ghost" data-act="export">Exporter</button>' +
-        '<button class="btn small danger" data-act="delete">Supprimer</button></div>';
+        '<button class="btn small ghost" data-act="edit">' + I18n.t('editor.edit') + '</button>' +
+        '<button class="btn small ghost" data-act="flash">' + I18n.t('editor.flashcards') + '</button>' +
+        '<button class="btn small ghost" data-act="share">' + I18n.t('editor.share') + '</button>' +
+        '<button class="btn small ghost" data-act="export">' + I18n.t('editor.export') + '</button>' +
+        '<button class="btn small danger" data-act="delete">' + I18n.t('editor.delete') + '</button></div>';
       card.querySelector('.quiz-card-title').textContent = q.titre;
       card.querySelector('[data-act=edit]').onclick = () => openEditor(q.id);
       card.querySelector('[data-act=export]').onclick = () => exportQuiz(q);
@@ -35,10 +36,10 @@ const Editor = (() => {
         Share.open(Share.quizPayload(q), q.titre);
       card.querySelector('[data-act=flash]').onclick = () => {
         try { Cards.flashcardsPDF(q); }
-        catch (err) { alert('G\u00e9n\u00e9ration impossible : ' + err.message); }
+        catch (err) { alert(I18n.t('editor.genError', { msg: err.message })); }
       };
       card.querySelector('[data-act=delete]').onclick = async () => {
-        if (confirm('Supprimer « ' + q.titre + ' » ? Cette action est définitive.')) {
+        if (confirm(I18n.t('editor.deleteConfirm', { title: q.titre }))) {
           await Storage.deleteQuiz(q.id);
           renderList();
         }
@@ -65,7 +66,7 @@ const Editor = (() => {
 
   async function openEditor(id) {
     current = id ? await Storage.getQuiz(id) : newQuiz();
-    if (!current) { alert('Questionnaire introuvable.'); return; }
+    if (!current) { alert(I18n.t('editor.notFound')); return; }
     document.getElementById('quiz-title').value = current.titre;
     renderQuestions();
     setStatus('');
@@ -84,13 +85,13 @@ const Editor = (() => {
 
     const head = document.createElement('div');
     head.className = 'q-head';
-    head.innerHTML = '<span class="q-num">Question ' + (qi + 1) + '</span>';
+    head.innerHTML = '<span class="q-num">' + I18n.t('editor.questionLabel', { num: qi + 1 }) + '</span>';
     const del = document.createElement('button');
     del.className = 'btn small danger';
-    del.textContent = 'Supprimer la question';
+    del.textContent = I18n.t('editor.deleteQuestion');
     del.onclick = () => {
       if (current.questions.length === 1) {
-        setStatus('Un questionnaire doit garder au moins une question.', true);
+        setStatus(I18n.t('editor.minOneQuestion'), true);
         return;
       }
       current.questions.splice(qi, 1);
@@ -101,7 +102,7 @@ const Editor = (() => {
 
     const text = document.createElement('input');
     text.type = 'text';
-    text.placeholder = 'Énoncé de la question';
+    text.placeholder = I18n.t('editor.questionPlaceholder');
     text.value = q.texte;
     block.appendChild(text);
     const textPrev = document.createElement('div');
@@ -124,12 +125,12 @@ const Editor = (() => {
     foot.className = 'q-foot';
     const hint = document.createElement('span');
     hint.className = 'q-hint';
-    hint.textContent = 'Touchez la lettre verte pour marquer la bonne réponse.';
+    hint.textContent = I18n.t('editor.markCorrect');
     foot.appendChild(hint);
     if (q.choix.length < 4) {
       const add = document.createElement('button');
       add.className = 'btn small ghost';
-      add.textContent = '+ Ajouter un choix';
+      add.textContent = I18n.t('editor.addChoice');
       add.onclick = () => { q.choix.push(''); renderQuestions(); };
       foot.appendChild(add);
     }
@@ -147,13 +148,13 @@ const Editor = (() => {
     letter.className = 'choice-letter';
     letter.textContent = LETTERS[ci];
     letter.setAttribute('aria-pressed', q.bonneReponse === LETTERS[ci] ? 'true' : 'false');
-    letter.title = 'Marquer ' + LETTERS[ci] + ' comme bonne réponse';
+    letter.title = I18n.t('editor.markLetterCorrect', { letter: LETTERS[ci] });
     letter.onclick = () => { q.bonneReponse = LETTERS[ci]; renderQuestions(); };
     row.appendChild(letter);
 
     const input = document.createElement('input');
     input.type = 'text';
-    input.placeholder = 'Choix ' + LETTERS[ci];
+    input.placeholder = I18n.t('editor.choicePlaceholder', { letter: LETTERS[ci] });
     input.value = q.choix[ci];
     row.appendChild(input);
     const prev = document.createElement('div');
@@ -171,7 +172,7 @@ const Editor = (() => {
       const rm = document.createElement('button');
       rm.className = 'choice-remove';
       rm.textContent = '\u00d7';
-      rm.title = 'Retirer ce choix';
+      rm.title = I18n.t('editor.removeChoice');
       rm.onclick = () => {
         q.choix.splice(ci, 1);
         if (!LETTERS.slice(0, q.choix.length).includes(q.bonneReponse)) q.bonneReponse = 'A';
@@ -186,12 +187,12 @@ const Editor = (() => {
 
   function validateCurrent() {
     current.titre = document.getElementById('quiz-title').value.trim();
-    if (!current.titre) return 'Donnez un titre au questionnaire.';
+    if (!current.titre) return I18n.t('editor.needTitle');
     for (let i = 0; i < current.questions.length; i++) {
       const q = current.questions[i];
-      if (!q.texte.trim()) return 'Question ' + (i + 1) + ' : l\u2019énoncé est vide.';
+      if (!q.texte.trim()) return I18n.t('editor.emptyQuestion', { num: i + 1 });
       for (let c = 0; c < q.choix.length; c++) {
-        if (!q.choix[c].trim()) return 'Question ' + (i + 1) + ' : le choix ' + LETTERS[c] + ' est vide.';
+        if (!q.choix[c].trim()) return I18n.t('editor.emptyChoice', { num: i + 1, letter: LETTERS[c] });
       }
     }
     return null;
@@ -207,7 +208,7 @@ const Editor = (() => {
     }));
     current.modifie = new Date().toISOString();
     await Storage.saveQuiz(current);
-    setStatus('Questionnaire enregistré.');
+    setStatus(I18n.t('editor.saved'));
     renderQuestions();
     return true;
   }
@@ -241,20 +242,15 @@ const Editor = (() => {
   }
 
   async function importQuizURL() {
-    const url = prompt('Adresse du fichier de questionnaire (JSON ou CSV) :');
+    const url = prompt(I18n.t('editor.urlPrompt'));
     if (!url) return;
     try {
       const resp = await fetch(normalizeURL(url.trim()));
       if (!resp.ok) throw new Error('r\u00e9ponse ' + resp.status);
       const obj = await importQuizText(await resp.text());
-      alert('Questionnaire \u00ab ' + obj.titre + ' \u00bb import\u00e9.');
+      alert(I18n.t('editor.urlImported', { title: obj.titre }));
     } catch (err) {
-      alert('Import impossible depuis ce lien.\n\n' +
-        'Cause probable : l\u2019h\u00e9bergeur (Google Drive notamment) interdit la lecture ' +
-        'directe par une autre page web (blocage CORS), ou pas de connexion internet.\n\n' +
-        'Solutions : t\u00e9l\u00e9chargez le fichier puis \u00ab Importer un fichier\u2026 \u00bb, ' +
-        'utilisez un lien de partage ClasseQCM (bouton Partager), ' +
-        'ou h\u00e9bergez le fichier sur GitHub.\n\nD\u00e9tail : ' + err.message);
+      alert(I18n.t('editor.urlImportError', { msg: err.message }));
     }
   }
 
@@ -263,7 +259,7 @@ const Editor = (() => {
       const text = await IO.readFileSmart(file);
       await importQuizText(text);
     } catch (e) {
-      alert('Import impossible : ' + e.message);
+      alert(I18n.t('editor.fileImportError', { msg: e.message }));
     }
   }
 

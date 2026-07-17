@@ -173,20 +173,20 @@ const Results = (() => {
 
     const sorted = [...data.students].sort((a, b) => {
       if (summarySort === 'prenom')
-        return (a.prenom || a.label).localeCompare(b.prenom || b.label, I18n.get()) || (a.id - b.id);
+        return (a.prenom || a.label).localeCompare(b.prenom || b.label, 'fr') || (a.id - b.id);
       if (summarySort === 'precision')
         return (b.pct - a.pct) || (b.correct - a.correct) || (a.id - b.id);
-      return (a.nom || a.label).localeCompare(b.nom || b.label, I18n.get()) || (a.id - b.id);
+      return (a.nom || a.label).localeCompare(b.nom || b.label, 'fr') || (a.id - b.id);
     });
 
-    html += '<div class="table-scroll"><table class="rc-table"><thead><tr><th>' + I18n.t('results.colStudent') + '</th>';
+    html += '<div class="table-scroll"><table class="rc-table"><thead><tr><th>\u00c9l\u00e8ve</th>';
     for (let i = 0; i < n; i++) {
       const pq = data.perQuestion[i];
       html += '<th class="rc-qhead">Q' + (i + 1) +
         '<span class="rc-qpct-badge ' + pctClass(pq.pct) + '">' +
         (pq.pct === null ? '\u2013' : pq.pct + '%') + '</span></th>';
     }
-    html += '<th>' + I18n.t('results.colScore') + '</th></tr></thead><tbody>';
+    html += '<th>Score</th></tr></thead><tbody>';
     sorted.forEach(s => {
       html += '<tr><td class="rc-name"></td>';
       s.answers.forEach((a, qi) => { html += cellMark(a, data.quiz.questions[qi], s); });
@@ -209,22 +209,22 @@ const Results = (() => {
     const sorted = [...data.students].sort((a, b) => {
       let v = 0;
       if (sortKey === 'num') v = a.id - b.id;
-      if (sortKey === 'nom') v = a.label.localeCompare(b.label, I18n.get());
+      if (sortKey === 'nom') v = a.label.localeCompare(b.label, 'fr');
       if (sortKey === 'score') v = (a.pct - b.pct) || (a.correct - b.correct);
       return v * sortDir;
     });
     const arrow = k => sortKey === k ? (sortDir === 1 ? ' \u25b2' : ' \u25bc') : '';
     let html = '<div class="table-scroll"><table class="rc-table"><thead><tr>' +
-      '<th class="rc-sort" data-k="num">' + I18n.t('results.colNum') + arrow('num') + '</th>' +
-      '<th class="rc-sort" data-k="nom">' + I18n.t('results.colStudent') + arrow('nom') + '</th>' +
-      '<th class="rc-sort" data-k="score">' + I18n.t('results.colAnswers') + arrow('score') + '</th>' +
+      '<th class="rc-sort" data-k="num">N\u00b0' + arrow('num') + '</th>' +
+      '<th class="rc-sort" data-k="nom">\u00c9l\u00e8ve' + arrow('nom') + '</th>' +
+      '<th class="rc-sort" data-k="score">Bonnes r\u00e9ponses' + arrow('score') + '</th>' +
       '<th>%</th></tr></thead><tbody>';
     sorted.forEach(s => {
       const nq = data.quiz.questions.length;
       const manque = nq - s.answered;
       html += '<tr><td>' + s.id + '</td><td class="rc-name"></td>' +
         '<td>' + s.correct + ' / ' + nq +
-        (manque ? ' <span class="rc-qpct">' + I18n.t('results.missingAnswers', { n: manque }) + '</span>' : '') + '</td>' +
+        (manque ? ' <span class="rc-qpct">(' + manque + ' sans r\u00e9ponse)</span>' : '') + '</td>' +
         '<td><strong>' + s.pct + '\u00a0%</strong></td></tr>';
     });
     html += '</tbody></table></div>';
@@ -246,28 +246,24 @@ const Results = (() => {
     data.perQuestion.forEach((pq, qi) => {
       const block = document.createElement('div');
       block.className = 'q-block';
-      let inner = '<div class="q-head"><span class="q-num">' + I18n.t('editor.questionLabel', { num: qi + 1 }) +
-        '</span><span class="rc-qsummary">' +
-        I18n.t('results.correctOutOf', { correct: pq.correct, answered: pq.answered }) +
-        (pq.pct === null ? '' : ' (' + pq.pct + '\u00a0%)') + '</span></div>' +
+      let inner = '<div class="q-head"><span class="q-num">Question ' + (qi + 1) +
+        '</span><span class="rc-qsummary">' + pq.correct + ' / ' + pq.answered +
+        ' justes' + (pq.pct === null ? '' : ' (' + pq.pct + '\u00a0%)') + '</span></div>' +
         '<p class="rc-qtext"></p><div class="rc-props">';
       LETTERS.slice(0, pq.q.choix.length).forEach((l, i) => {
         const good = l === pq.q.bonneReponse;
         const count = pq.counts[l];
         const bar = pq.answered ? Math.round(100 * count / pq.answered) : 0;
-        const word = I18n.plural(count, I18n.t('results.answerSingular'), I18n.t('results.answerPlural'));
         inner += '<div class="rc-prop' + (good ? ' rc-prop-good' : '') + '">' +
           '<span class="rc-prop-letter">' + l + (good ? ' \u2713' : '') + '</span>' +
           '<span class="rc-prop-text"></span>' +
-          '<span class="rc-prop-count">' + count + ' ' + word + '</span>' +
+          '<span class="rc-prop-count">' + count + ' r\u00e9ponse' + (count > 1 ? 's' : '') + '</span>' +
           '<span class="rc-prop-bar"><span style="width:' + bar + '%"></span></span></div>';
       });
       inner += '</div>';
       const extras = [];
-      if (pq.none) extras.push(I18n.t('results.noAnswerExtra', { n: pq.none }));
-      if (pq.invalid) extras.push(I18n.t(
-        I18n.plural(pq.invalid, 'results.invalidExtraSingular', 'results.invalidExtraPlural'),
-        { n: pq.invalid }));
+      if (pq.none) extras.push(pq.none + ' sans r\u00e9ponse');
+      if (pq.invalid) extras.push(pq.invalid + ' r\u00e9ponse(s) hors choix propos\u00e9s (compt\u00e9es fausses)');
       if (extras.length) inner += '<p class="q-hint">' + extras.join(' \u00b7 ') + '</p>';
       block.innerHTML = inner;
       MathText.render(block.querySelector('.rc-qtext'), pq.q.texte);
@@ -487,15 +483,15 @@ const Results = (() => {
         groupe.forEach(s => {
           const row = document.createElement('div');
           row.className = 'besoin-row';
-          row.textContent = I18n.t('results.groupCardLine',
-            { label: s.label, id: s.id, pct: s.pct, correct: s.correct, total: data.quiz.questions.length });
+          row.textContent = s.label + ' (carte ' + s.id + ') \u2014 ' + s.pct + ' % (' +
+            s.correct + '/' + data.quiz.questions.length + ')';
           list.appendChild(row);
         });
       }
       panel.classList.remove('hidden');
       document.getElementById('besoin-copy').onclick = async () => {
-        const txt = I18n.t('results.groupClipboardTitle', { title: MathText.plain(data.quiz.titre) }) + '\n' +
-          groupe.map(s => I18n.t('results.groupClipboardLine', { label: s.label, id: s.id, pct: s.pct })).join('\n');
+        const txt = 'Groupe de besoin \u2014 ' + MathText.plain(data.quiz.titre) + '\n' +
+          groupe.map(s => s.label + ' (carte ' + s.id + ') : ' + s.pct + ' %').join('\n');
         try { await navigator.clipboard.writeText(txt); } catch (_) {}
       };
       document.getElementById('besoin-close').onclick = () => panel.classList.add('hidden');
